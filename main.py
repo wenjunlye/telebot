@@ -20,6 +20,33 @@ TOKEN = secrets.token
 
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
+classID = secrets.class_id
+meID = secrets.class_id
+
+class SG(datetime.tzinfo):
+    def utcoffset(self, dt):
+        return datetime.timedelta(hours=8)
+    def tzname(self, dt):
+        return "SGT"
+    def dst(self, dt):
+        return datetime.timedelta(hours=8)
+
+sg = SG()
+
+timetable_original = [
+    ['/oddmonday',     'CLC, Humans, LA\nIM, Chem'],
+    ['/oddtuesday',    'Bio, HCL, PE\nLA, Chem(lab)'],
+    ['/oddwednesday',  'IM, LA, Humans\nIH, CCE'],
+    ['/oddthursday',   'IM, PE, HCL\nHumans, LA'],
+    ['/oddfriday',     'IH, Bio(lab), IM\nHCL, Chem, LA'],
+    ['/evenmonday',    'HCL, PE\nIM'],
+    ['/eventuesday',   'HCL, LA, Bio(lab)\nHumans, Chem(lab)'],
+    ['/evenwednesday', 'Humans, IH, IM\nLA, CCE'],
+    ['/eventhursday',  'PE, LA, Bio\nIM, Assembly'],
+    ['/evenfriday',    'IH, LA, Bio\nChem, IM, HCL']
+]
+
+timetable = copy.deepcopy(timetable_original)
 
 # ================================
 
@@ -27,12 +54,15 @@ class EnableStatus(ndb.Model):
     # key name: str(chat_id)
     enabled = ndb.BooleanProperty(indexed=False, default=False)
 
-
 class Commands(ndb.Model):
     # key name: str(sender)
     command = ndb.StringProperty()
     argDate = ndb.DateProperty()
     argText = ndb.StringProperty()
+    
+class Humanities(ndb.Model):
+    # key name: str(sender)
+    humans = ndb.StringProperty()
     
 # ================================
 
@@ -71,6 +101,17 @@ def getCommand(sender):
         argDate = c.argDate
         argText = c.argText
     return command, argDate, argText
+
+def setHumans(sender, subj):
+    h = Humanities.get_or_insert(str(sender))
+    h.humans = subj
+    h.put()
+    
+def getHumans(sender):
+    h = Humanities.get_by_id(str(sender))
+    if h:
+        return h.humans
+    return 'Humans'
 
 # ================================
 
@@ -174,9 +215,26 @@ class WebhookHandler(webapp2.RequestHandler):
             elif text == '/stop':
                 reply('Bot disabled')
                 setEnabled(chat_id, False)
-
+        
+        # TIMETABLE CALCULATIONS
+        nextschday = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
+        now = datetime.datetime.now(sg)
+        startterm = datetime.datetime(2017, 6, 24, 0, 0, 0, tzinfo=sg)
+        delta = now - startterm
+        split = str.split(str(delta))
+        week = math.floor(int(split[0])/7 + 1)
+        if week > 10:
+            week = 0
+        dayofweek = now.weekday()
+        
+        humans = getHumans(sender)
+        for i in range(0, len(timetable)-1):
+            timetable[i][1] = timetableORG[i][1].replace("Humans", humans)
+        
         def checkCommand(command, date, arg):
             complete = True
+            
+            # INCOMPLETE COMMANDS
             
             if complete == False:
                 updateCommand(sender, command, date, arg)
@@ -213,6 +271,71 @@ class WebhookHandler(webapp2.RequestHandler):
                 
                 # COMPLETE COMMANDS
                 if complete:
+                    if arg == '/cancel' or command == '/cancel':
+                        clearCommand(sender)
+                        reply("Command cancelled")
+                    
+                    # TIMETABLE
+                    elif command == '/tomorrow':
+                        index = dayofweek
+                        if week % 2 == 0: #even week
+                            index += 7
+                        index = nextschday[index]
+                        reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+
+                    elif command == '/weekno':
+                        if dayofweek <= 4:
+                            reply("This week is week %d" % week)
+                        else:
+                            reply("Next week is week %d" % week)
+
+                    elif command == '/next':
+                        subj = arg
+                        index = dayofweek
+                        if week % 2 == 0: #even week
+                            index += 7
+                        index = nextschday[index]
+                        start = index
+
+                        while True:
+                            if subj in timetable[index][1]:
+                                oddity = week % 2
+                                if 'odd' in timetable[index][0]:
+                                    oddity2 = 1
+                                else:
+                                    oddity2 = 0
+                                if oddity == oddity2:
+                                    thisnext = 'this'
+                                else:
+                                    thisnext = 'next'
+
+                                weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                                day = weekdays[index%5]
+                                diff = index%5 - dayofweek
+
+                                if index%5 < dayofweek:
+                                    diff += 7
+                                if thisnext == 'next':
+                                    diff += 7
+                                d = now + datetime.timedelta(diff)
+
+                                reply("The next %s lesson is %s %s, %d/%d (%s)" % (subj, thisnext, day, d.day, d.month, timetable[index][0]))
+                                break
+                            else:
+                                index = (index + 1) % 10
+
+                            if index == start:
+                                reply("Subject not found.")
+                                break
+                    elif command == '/sethumans':
+                        setHumans(sender, arg)
+                        reply("Humanities subject for %s has been set to %s" % (fr['first_name'], getHumans(sender)))
+                    else:
+                        for day in timetable:
+                            if day[0] in text:
+                                reply(day[1])
+                    
+                    clearCommand(sender)
 
 
 app = webapp2.WSGIApplication([
