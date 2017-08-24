@@ -72,7 +72,12 @@ class Things(ndb.Model):
     # key name: hw_id
     duedate = ndb.DateProperty()
     thing = ndb.StringProperty()
-    
+
+class Birthdays(ndb.Model):
+    # key name: bday_id
+    birthday = ndb.DateProperty()
+    name = ndb.StringProperty()
+
 # ================================
 
 def setEnabled(chat_id, yes):
@@ -413,6 +418,15 @@ class WebhookHandler(webapp2.RequestHandler):
                     elif command == '/sethumans':
                         setHumans(sender, arg)
                         reply("Humanities subject for %s has been set to %s" % (fr['first_name'], getHumans(sender)))
+                    
+                    # BIRTHDAYS
+                    elif command == '/nextbirthday':
+                        # really roundabout way of doing this but i don't know how else to do this
+                        query = Birthdays.query(Birthdays.birthday > now).order(-Birthdays.birthday)
+                        for q in query:
+                            response = "%s %s" % (q.birthday.strftime('%d/%m'), q.name)
+                        reply(response)
+                        
                     else:
                         for day in timetable:
                             if day[0] in text:
@@ -431,6 +445,19 @@ class CustomMessage(webapp2.RequestHandler):
             'parse_mode': 'Markdown'
         })).read()
         
+class CheckBday(webapp2.RequestHandler):
+    def get(self):
+        urlfetch.set_default_fetch_deadline(60)
+        nowtime = datetime.datetime.now()
+        thism = nowtime.month
+        thisd = nowtime.day
+        query = Birthdays.query(Birthdays.birthday == datetime.date(2017, thism, thisd))
+        for q in query:
+            resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
+                'chat_id': classID,
+                'text': "Happy birthday %s!" % q.name
+            })).read()
+            
 class CheckTimetable(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
@@ -466,4 +493,7 @@ app = webapp2.WSGIApplication([
     ('/updates', GetUpdatesHandler),
     ('/set_webhook', SetWebhookHandler),
     ('/webhook', WebhookHandler),
+    ('/msg', CustomMessage),
+    ('/checkbday', CheckBday),
+    ('/checkttb', CheckTimetable)
 ], debug=True)

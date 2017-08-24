@@ -1,0 +1,10 @@
+cron:
+- description: checkbirthday
+  url: /checkbday
+  schedule: every day 08:01
+  timezone: Asia/Singapore
+  
+- description: checktimetable
+  url: /checkttb
+  schedule: every day 20:00
+  timezone: Asia/Singapore
