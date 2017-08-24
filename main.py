@@ -28,6 +28,12 @@ class EnableStatus(ndb.Model):
     enabled = ndb.BooleanProperty(indexed=False, default=False)
 
 
+class Commands(ndb.Model):
+    # key name: str(sender)
+    command = ndb.StringProperty()
+    argDate = ndb.DateProperty()
+    argText = ndb.StringProperty()
+    
 # ================================
 
 def setEnabled(chat_id, yes):
@@ -41,6 +47,30 @@ def getEnabled(chat_id):
         return es.enabled
     return False
 
+def updateCommand(sender, command, argDate, argText):
+    c = Commands.get_or_insert(str(sender))
+    if command != '':
+        c.command = command
+    if argDate != datetime.datetime.min:
+        c.argDate = argDate
+    if argText != '':
+        c.argText = argText
+    c.put()
+
+def clearCommand(sender):
+    c = Commands.get_or_insert(str(sender))
+    c.command = ''
+    c.argDate = datetime.datetime.min
+    c.argText = ''
+    c.put()
+    
+def getCommand(sender):
+    c = Commands.get_by_id(str(sender))
+    if c:
+        command = c.command
+        argDate = c.argDate
+        argText = c.argText
+    return command, argDate, argText
 
 # ================================
 
@@ -88,13 +118,25 @@ class WebhookHandler(webapp2.RequestHandler):
             logging.info('no text')
             return
 
-        def reply(msg=None, img=None):
+        # KEYBOARDS AND REPLYING
+        removekb = json.dumps({'remove_keyboard': True,
+                               'selective': True})
+        forcereply = json.dumps({'force_reply': True,
+                                'selective': True})
+        def reply(msg=None, img=None, gif=None, keyboard=removekb, debug=False):
             if msg:
+                if debug:
+                    recipient = meID
+                    reply = ''
+                else:
+                    recipient = str(chat_id)
+                    reply = str(message_id)
                 resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
-                    'chat_id': str(chat_id),
+                    'chat_id': recipient,
                     'text': msg.encode('utf-8'),
                     'disable_web_page_preview': 'true',
-                    'reply_to_message_id': str(message_id),
+                    'reply_to_message_id': reply,
+                    'reply_markup': keyboard
                 })).read()
             elif img:
                 resp = multipart.post_multipart(BASE_URL + 'sendPhoto', [
@@ -103,6 +145,21 @@ class WebhookHandler(webapp2.RequestHandler):
                 ], [
                     ('photo', 'image.jpg', img),
                 ])
+                action = resp = urllib2.urlopen(BASE_URL + 'sendChatAction', urllib.urlencode({
+                    'chat_id': str(chat_id),
+                    'action': 'upload_photo'
+                })).read()
+            elif gif: 
+                resp = multipart.post_multipart(BASE_URL + 'sendDocument', [
+                    ('chat_id', str(chat_id)),
+                    ('reply_to_message_id', str(message_id)),
+                ], [
+                    ('document', 'gif.gif', gif),
+                ])
+                action = resp = urllib2.urlopen(BASE_URL + 'sendChatAction', urllib.urlencode({
+                    'chat_id': str(chat_id),
+                    'action': 'upload_document'
+                })).read()
             else:
                 logging.error('no msg or img specified')
                 resp = None
@@ -117,28 +174,45 @@ class WebhookHandler(webapp2.RequestHandler):
             elif text == '/stop':
                 reply('Bot disabled')
                 setEnabled(chat_id, False)
-            elif text == '/image':
-                img = Image.new('RGB', (512, 512))
-                base = random.randint(0, 16777216)
-                pixels = [base+i*j for i in range(512) for j in range(512)]  # generate sample image
-                img.putdata(pixels)
-                output = StringIO.StringIO()
-                img.save(output, 'JPEG')
-                reply(img=output.getvalue())
-            else:
-                reply('What command?')
 
-        # CUSTOMIZE FROM HERE
+        def checkCommand(command, date, arg):
+            complete = True
+            
+            if complete == False:
+                updateCommand(sender, command, date, arg)
+            
+            return complete
+            
+        if getEnabled(chat_id):
+            # CONTINUATION OF INCOMPLETE COMMANDS
+            if 'reply_to_message' in message and 'username' in message['reply_to_message']['from']:
+                if message['reply_to_message']['from']['username'] == 'threeoheight_bot':
+                    # check the context of the incomplete command
+                    incomplete = getCommand(sender)
+                    command = incomplete[0]
+                    date = incomplete[1]
+                    arg = incomplete[2]
+                    
+            if text.startswith('/'):
+                text = str(text).replace('@threeoheight_bot', '')
+                splitCommand = str.split(text)
+                # TODO: account for commands that don't start from the 0th character, e.g. 'and /cute'
 
-        elif 'who are you' in text:
-            reply('telebot starter kit, created by yukuku: https://github.com/yukuku/telebot')
-        elif 'what time' in text:
-            reply('look at the corner of your screen!')
-        else:
-            if getEnabled(chat_id):
-                reply('I got your message! (but I do not know how to answer)')
-            else:
-                logging.info('not enabled for chat_id {}'.format(chat_id))
+                command = splitCommand[0]
+                date = datetime.datetime.min
+                arg = ''
+
+                try:
+                    date = datetime.datetime.strptime(splitCommand[1]+'/2017', "%d/%m/%Y")
+                except:
+                    arg = ' '.join(splitCommand[1:])
+                else:
+                    arg = ' '.join(splitCommand[2:])
+                    
+                complete = checkCommand(command, date, arg)
+                
+                # COMPLETE COMMANDS
+                if complete:
 
 
 app = webapp2.WSGIApplication([
