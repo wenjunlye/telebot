@@ -5,6 +5,8 @@ import random
 import urllib
 import urllib2
 
+import secrets
+
 # for sending images
 from PIL import Image
 import multipart
@@ -14,7 +16,7 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 import webapp2
 
-TOKEN = 'YOUR_BOT_TOKEN_HERE'
+TOKEN = secrets.token
 
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
