@@ -337,6 +337,36 @@ class WebhookHandler(webapp2.RequestHandler):
                     
                     clearCommand(sender)
 
+        
+class CheckTimetable(webapp2.RequestHandler):
+    def get(self):
+        urlfetch.set_default_fetch_deadline(60)
+        
+        now = datetime.datetime.now(sg)
+        startterm = datetime.datetime(2017, 6, 24, 0, 0, 0, tzinfo=sg)
+        delta = now - startterm
+        split = str.split(str(delta))
+        week = math.floor(int(split[0])/7 + 1)
+        if week > 10:
+            week = 0
+        dayofweek = now.weekday()
+        
+        tmr = (dayofweek + 1)%7
+        if tmr <= 4: # if tomorrow is a weekday
+            index = tmr
+            if week % 2 == 0: # even week
+                index += 5
+            ttb = timetable[index]
+            triggers = ['PE']
+            
+            for trigger in triggers:
+                if trigger in ttb[1]:
+                    resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
+                        'chat_id':  classID,
+                        'text': "There's %s tomorrow! (%s)" % (trigger, ttb[0]),
+                        'parse_mode': 'Markdown'
+                    })).read()
+                    
 
 app = webapp2.WSGIApplication([
     ('/me', MeHandler),
