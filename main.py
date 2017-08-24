@@ -4,6 +4,10 @@ import logging
 import random
 import urllib
 import urllib2
+import time
+import datetime
+import math
+import copy
 
 import secrets
 
@@ -64,6 +68,11 @@ class Humanities(ndb.Model):
     # key name: str(sender)
     humans = ndb.StringProperty()
     
+class Things(ndb.Model):
+    # key name: hw_id
+    duedate = ndb.DateProperty()
+    thing = ndb.StringProperty()
+    
 # ================================
 
 def setEnabled(chat_id, yes):
@@ -113,6 +122,12 @@ def getHumans(sender):
         return h.humans
     return 'Humans'
 
+def addThing(hw_id, date, name):
+    t = Things.get_or_insert(hw_id)
+    t.duedate = date
+    t.thing = name
+    t.put()
+    
 # ================================
 
 class MeHandler(webapp2.RequestHandler):
@@ -153,7 +168,8 @@ class WebhookHandler(webapp2.RequestHandler):
         text = message.get('text')
         fr = message.get('from')
         chat = message['chat']
-        chat_id = chat['id']
+        chat_id = chat['id'] # unique identifier of chat
+        sender = fr['id'] # unique identifier of sender
 
         if not text:
             logging.info('no text')
@@ -231,11 +247,38 @@ class WebhookHandler(webapp2.RequestHandler):
         for i in range(0, len(timetable)-1):
             timetable[i][1] = timetableORG[i][1].replace("Humans", humans)
         
+        allhw = []
+        query = Things.query(Things.duedate > now).order(Things.duedate)
+        
         def checkCommand(command, date, arg):
             complete = True
             
             # INCOMPLETE COMMANDS
-            
+            if command == '/addhomework':
+                if date == datetime.datetime.min:
+                    reply("When is this homework due?", keyboard=forcereply)
+                    complete = False
+                elif arg == '':
+                    reply("What is the homework called?", keyboard=forcereply)
+                    complete = False
+            elif command == '/delhomework':
+                if arg == '':
+                    for q in query:
+                        allhw.append(["%s %s" % (q.duedate.strftime("%d/%m"), q.thing)])
+                    hwkeyboard = json.dumps({'keyboard': allhw, 
+                                                'one_time_keyboard': True, 
+                                                'resize_keyboard': True,
+                                                'selective': True})
+                    reply("Which homework would you like to delete?", keyboard=hwkeyboard)
+                    complete = False
+            elif command == '/sethumans':
+                if arg == '':
+                    reply("What would you like your humanities subject to show as?", keyboard=forcereply)
+                    complete = False
+            elif command == '/next':
+                if arg == '':
+                    reply("What subject do you want to search for?", keyboard=forcereply)
+                    complete = False
             if complete == False:
                 updateCommand(sender, command, date, arg)
             
@@ -251,10 +294,32 @@ class WebhookHandler(webapp2.RequestHandler):
                     date = incomplete[1]
                     arg = incomplete[2]
                     
+                    
+                    if command == '/sethumans' or command == '/next':
+                        if arg == '':
+                            arg = text
+                        complete = checkCommand(command, date, arg)
+                        if complete:
+                            text = "%s %s" % (command, arg)
+                    elif command == '/addhomework':
+                        if date < datetime.date(1991, 1, 1):
+                            date = datetime.datetime.strptime(text+'/2017', "%d/%m/%Y")
+                        elif arg == '':
+                            arg = text
+                        
+                        complete = checkCommand(command, date, arg)
+                        if complete:
+                            text = "%s %s %s" % (command, datetime.datetime.strftime(date, "%d/%m"), arg)
+                    elif command == '/delhomework':
+                        query = Things.query(Things.thing == text[6:])
+                        for q in query:
+                            print(q.key.id())
+                            target = q.key
+                            target.delete()
+                            reply("Ok, %s has been deleted." % text)
             if text.startswith('/'):
                 text = str(text).replace('@threeoheight_bot', '')
                 splitCommand = str.split(text)
-                # TODO: account for commands that don't start from the 0th character, e.g. 'and /cute'
 
                 command = splitCommand[0]
                 date = datetime.datetime.min
@@ -274,6 +339,24 @@ class WebhookHandler(webapp2.RequestHandler):
                     if arg == '/cancel' or command == '/cancel':
                         clearCommand(sender)
                         reply("Command cancelled")
+                        
+                    # HOMEWORK
+                    elif command == '/addhomework':
+                        addThing(time.strftime("%d%m%Y%I%M%S"), date, arg)
+                        reply("Ok, %s has been set." % arg)
+                    elif command == '/gethomework' or command == '/thisweek':
+                        if command == '/thisweek':
+                            query = query.filter(Things.duedate < now + datetime.timedelta(days=7))
+
+                        response = ""
+                        for q in query:
+                            response = response + q.duedate.strftime("%d/%m")+' '+q.thing + '\n'
+
+                        if response == "":
+                            reply("There's no homework! Rejoice!")
+                        else:
+                            reply(response)
+
                     
                     # TIMETABLE
                     elif command == '/tomorrow':
