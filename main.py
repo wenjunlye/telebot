@@ -318,7 +318,7 @@ class WebhookHandler(webapp2.RequestHandler):
         
         humans = getHumans(sender)
         for i in range(0, len(timetable)-1):
-            timetable[i][1] = timetableORG[i][1].replace("Humans", humans)
+            timetable[i][1] = timetable_original[i][1].replace("Humans", humans)
         
         allhw = []
         query = Things.query(Things.duedate > now).order(Things.duedate)
@@ -451,18 +451,18 @@ class WebhookHandler(webapp2.RequestHandler):
                                     oddity2 = 1
                                 else:
                                     oddity2 = 0
-                                if oddity == oddity2:
-                                    thisnext = 'this'
-                                else:
-                                    thisnext = 'next'
 
                                 weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
                                 day = weekdays[index%5]
                                 diff = index%5 - dayofweek
 
-                                if index%5 < dayofweek:
-                                    diff += 7
-                                if thisnext == 'next':
+                                if oddity == oddity2:
+                                    thisnext = 'this'
+                                    if diff < 0:
+                                        thisnext = 'next next'
+                                        diff += 14
+                                else:
+                                    thisnext = 'next'
                                     diff += 7
                                 d = now + datetime.timedelta(diff)
 
