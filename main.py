@@ -337,6 +337,16 @@ class WebhookHandler(webapp2.RequestHandler):
                     
                     clearCommand(sender)
 
+class CustomMessage(webapp2.RequestHandler):
+    def get(self):
+        urlfetch.set_default_fetch_deadline(60)
+        msg = self.request.get('msg')
+        chat = self.request.get('chat')
+        resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
+            'chat_id': str(chat) or meID,
+            'text': msg,
+            'parse_mode': 'Markdown'
+        })).read()
         
 class CheckTimetable(webapp2.RequestHandler):
     def get(self):
