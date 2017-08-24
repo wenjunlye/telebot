@@ -135,6 +135,11 @@ class Birthdays(ndb.Model):
     birthday = ndb.DateProperty()
     name = ndb.StringProperty()
 
+class Documents(ndb.Model):
+    # key name: doc_id
+    from_chat_id = ndb.StringProperty()
+    message_id = ndb.StringProperty()
+
 # ================================
 
 def setEnabled(chat_id, yes):
@@ -189,6 +194,12 @@ def addThing(hw_id, date, name):
     t.duedate = date
     t.thing = name
     t.put()
+
+def saveDocument(doc_id, from_chat_id, message_id):
+    d = Documents.get_or_insert(doc_id)
+    d.from_chat_id = from_chat_id
+    d.message_id = message_id
+    d.put()
     
 # ================================
 
@@ -286,13 +297,13 @@ class WebhookHandler(webapp2.RequestHandler):
             logging.info('send response:')
             logging.info(resp)
 
-        if text.startswith('/'):
-            if text == '/start':
-                reply('Bot enabled')
-                setEnabled(chat_id, True)
-            elif text == '/stop':
-                reply('Bot disabled')
-                setEnabled(chat_id, False)
+        
+        def forward(from_chat_id, message_id):
+            resp = urllib2.urlopen(BASE_URL + 'forwardMessage', urllib.urlencode({
+                'chat_id': str(chat_id),
+                'from_chat_id': from_chat_id,
+                'message_id': message_id
+            })).read()
         
         # TIMETABLE CALCULATIONS
         nextschday = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
@@ -312,6 +323,15 @@ class WebhookHandler(webapp2.RequestHandler):
         allhw = []
         query = Things.query(Things.duedate > now).order(Things.duedate)
         
+        # ENABLING AND DISABLING
+        if text.startswith('/'):
+            if text == '/start':
+                reply('Bot enabled')
+                setEnabled(chat_id, True)
+            elif text == '/stop':
+                reply('Bot disabled')
+                setEnabled(chat_id, False)
+                
         def checkCommand(command, date, arg):
             complete = True
             
@@ -401,24 +421,6 @@ class WebhookHandler(webapp2.RequestHandler):
                     if arg == '/cancel' or command == '/cancel':
                         clearCommand(sender)
                         reply("Command cancelled")
-                        
-                    # HOMEWORK
-                    elif command == '/addhomework':
-                        addThing(time.strftime("%d%m%Y%I%M%S"), date, arg)
-                        reply("Ok, %s has been set." % arg)
-                    elif command == '/gethomework' or command == '/thisweek':
-                        if command == '/thisweek':
-                            query = query.filter(Things.duedate < now + datetime.timedelta(days=7))
-
-                        response = ""
-                        for q in query:
-                            response = response + q.duedate.strftime("%d/%m")+' '+q.thing + '\n'
-
-                        if response == "":
-                            reply("There's no homework! Rejoice!")
-                        else:
-                            reply(response)
-
                     
                     # TIMETABLE
                     elif command == '/tomorrow':
@@ -475,6 +477,32 @@ class WebhookHandler(webapp2.RequestHandler):
                     elif command == '/sethumans':
                         setHumans(sender, arg)
                         reply("Humanities subject for %s has been set to %s" % (fr['first_name'], getHumans(sender)))
+                    
+                    # HOMEWORK
+                    elif command == '/addhomework':
+                        addThing(time.strftime("%d%m%Y%I%M%S"), date, arg)
+                        reply("Ok, %s has been set." % arg)
+                    elif command == '/gethomework' or command == '/thisweek':
+                        if command == '/thisweek':
+                            query = query.filter(Things.duedate < now + datetime.timedelta(days=7))
+
+                        response = ""
+                        for q in query:
+                            response = response + q.duedate.strftime("%d/%m")+' '+q.thing + '\n'
+
+                        if response == "":
+                            reply("There's no homework! Rejoice!")
+                        else:
+                            reply(response)
+
+                    # DOCUMENTS
+                    elif command == '/savedocument':
+                        saveDocument(time.strftime("%d%m%Y%I%M%S"), str(chat_id), str(message_id))
+                        reply("Document saved.")
+                    elif command == '/getdocument':
+                        query = Documents.query()
+                        for q in query:
+                            forward(q.from_chat_id, q.message_id)
                     
                     # BIRTHDAYS
                     elif command == '/nextbirthday':
