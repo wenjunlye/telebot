@@ -135,11 +135,6 @@ class Birthdays(ndb.Model):
     birthday = ndb.DateProperty()
     name = ndb.StringProperty()
 
-class Documents(ndb.Model):
-    # key name: doc_id
-    from_chat_id = ndb.StringProperty()
-    message_id = ndb.StringProperty()
-
 # ================================
 
 def setEnabled(chat_id, yes):
@@ -194,12 +189,6 @@ def addThing(hw_id, date, name):
     t.duedate = date
     t.thing = name
     t.put()
-
-def saveDocument(doc_id, from_chat_id, message_id):
-    d = Documents.get_or_insert(doc_id)
-    d.from_chat_id = from_chat_id
-    d.message_id = message_id
-    d.put()
     
 # ================================
 
@@ -297,14 +286,6 @@ class WebhookHandler(webapp2.RequestHandler):
             logging.info('send response:')
             logging.info(resp)
 
-        
-        def forward(from_chat_id, message_id):
-            resp = urllib2.urlopen(BASE_URL + 'forwardMessage', urllib.urlencode({
-                'chat_id': str(chat_id),
-                'from_chat_id': from_chat_id,
-                'message_id': message_id
-            })).read()
-        
         # TIMETABLE CALCULATIONS
         nextschday = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
         now = datetime.datetime.now(sg)
@@ -495,15 +476,6 @@ class WebhookHandler(webapp2.RequestHandler):
                         else:
                             reply(response)
 
-                    # DOCUMENTS
-                    elif command == '/savedocument':
-                        saveDocument(time.strftime("%d%m%Y%I%M%S"), str(chat_id), str(message_id))
-                        reply("Document saved.")
-                    elif command == '/getdocument':
-                        query = Documents.query()
-                        for q in query:
-                            forward(q.from_chat_id, q.message_id)
-                    
                     # BIRTHDAYS
                     elif command == '/nextbirthday':
                         # really roundabout way of doing this but i don't know how else to do this
