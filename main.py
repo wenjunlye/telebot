@@ -135,7 +135,7 @@ class Birthdays(ndb.Model):
     birthday = ndb.DateProperty()
     name = ndb.StringProperty()
 
-class Documents(ndb.Model):
+class Messages(ndb.Model):
     # key name: doc_id
     from_chat_id = ndb.StringProperty()
     message_id = ndb.StringProperty()
@@ -196,12 +196,12 @@ def addThing(hw_id, date, name):
     t.thing = name
     t.put()
 
-def saveDocument(doc_id, from_chat_id, message_id, tags):
-    d = Documents.get_or_insert(doc_id)
-    d.from_chat_id = from_chat_id
-    d.message_id = message_id
-    d.tags = tags
-    d.put()
+def saveMessage(doc_id, from_chat_id, message_id, tags):
+    m = Messages.get_or_insert(doc_id)
+    m.from_chat_id = from_chat_id
+    m.message_id = message_id
+    m.tags = tags
+    m.put()
     
 # ================================
 
@@ -241,7 +241,10 @@ class WebhookHandler(webapp2.RequestHandler):
         
         text = message.get('text')
         if not text:
-            text = message['caption']
+            try:
+                text = message['caption']
+            except:
+                text = ''
         
         message_id = message.get('message_id')
         date = message.get('date')
@@ -498,13 +501,19 @@ class WebhookHandler(webapp2.RequestHandler):
                         else:
                             reply(response)
 
-                    # DOCUMENTS
+                    # MESSAGES
                     elif command == '/save':
                         tags = str.split(arg)
-                        saveDocument(time.strftime("%d%m%Y%I%M%S"), str(chat_id), str(message_id), tags)
+                        if 'reply_to_message' in message:
+                            from_chat_id = str(message['reply_to_message']['chat']['id'])
+                            message_id = str(message['reply_to_message']['message_id'])
+                        else:
+                            from_chat_id = str(chat_id)
+                            message_id = str(message_id)
+                        saveMessage(time.strftime("%d%m%Y%I%M%S"), from_chat_id, message_id, tags)
                         reply("Message saved.")
                     elif command == '/find':
-                        query = Documents.query(Documents.tags == arg)
+                        query = Messages.query(Messages.tags == arg)
                         for q in query:
                             forward(q.from_chat_id, q.message_id)
                     
