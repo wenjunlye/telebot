@@ -135,6 +135,12 @@ class Birthdays(ndb.Model):
     birthday = ndb.DateProperty()
     name = ndb.StringProperty()
 
+class Messages(ndb.Model):
+    # key name: doc_id
+    from_chat_id = ndb.StringProperty()
+    message_id = ndb.StringProperty()
+    tags = ndb.StringProperty(repeated=True)
+
 # ================================
 
 def setEnabled(chat_id, yes):
@@ -189,6 +195,13 @@ def addThing(hw_id, date, name):
     t.duedate = date
     t.thing = name
     t.put()
+
+def saveMessage(doc_id, from_chat_id, message_id, tags):
+    m = Messages.get_or_insert(doc_id)
+    m.from_chat_id = from_chat_id
+    m.message_id = message_id
+    m.tags = tags
+    m.put()
     
 # ================================
 
@@ -225,18 +238,21 @@ class WebhookHandler(webapp2.RequestHandler):
             message = body['message']
         except:
             message = body['edited_message']
+        
+        text = message.get('text')
+        if not text:
+            try:
+                text = message['caption']
+            except:
+                text = ''
+        
         message_id = message.get('message_id')
         date = message.get('date')
-        text = message.get('text')
         fr = message.get('from')
         chat = message['chat']
         chat_id = chat['id'] # unique identifier of chat
         sender = fr['id'] # unique identifier of sender
-
-        if not text:
-            logging.info('no text')
-            return
-
+        
         # KEYBOARDS AND REPLYING
         removekb = json.dumps({'remove_keyboard': True,
                                'selective': True})
@@ -286,6 +302,14 @@ class WebhookHandler(webapp2.RequestHandler):
             logging.info('send response:')
             logging.info(resp)
 
+        
+        def forward(from_chat_id, message_id):
+            resp = urllib2.urlopen(BASE_URL + 'forwardMessage', urllib.urlencode({
+                'chat_id': str(chat_id),
+                'from_chat_id': from_chat_id,
+                'message_id': message_id
+            })).read()
+        
         # TIMETABLE CALCULATIONS
         nextschday = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
         now = datetime.datetime.now(sg)
@@ -399,6 +423,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 
                 # COMPLETE COMMANDS
                 if complete:
+                    
                     if arg == '/cancel' or command == '/cancel':
                         clearCommand(sender)
                         reply("Command cancelled")
@@ -476,6 +501,22 @@ class WebhookHandler(webapp2.RequestHandler):
                         else:
                             reply(response)
 
+                    # MESSAGES
+                    elif command == '/save':
+                        tags = str.split(arg)
+                        if 'reply_to_message' in message:
+                            from_chat_id = str(message['reply_to_message']['chat']['id'])
+                            message_id = str(message['reply_to_message']['message_id'])
+                        else:
+                            from_chat_id = str(chat_id)
+                            message_id = str(message_id)
+                        saveMessage(time.strftime("%d%m%Y%I%M%S"), from_chat_id, message_id, tags)
+                        reply("Message saved.")
+                    elif command == '/find':
+                        query = Messages.query(Messages.tags == arg)
+                        for q in query:
+                            forward(q.from_chat_id, q.message_id)
+                    
                     # BIRTHDAYS
                     elif command == '/nextbirthday':
                         # really roundabout way of doing this but i don't know how else to do this
