@@ -25,7 +25,7 @@ TOKEN = secrets.token
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 classID = secrets.class_id
-meID = secrets.class_id
+meID = secrets.me_id
 
 class SG(datetime.tzinfo):
     def utcoffset(self, dt):
@@ -89,7 +89,25 @@ imgs = [
     'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/han-bao-bao_orig.jpg',
     'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/totogod_orig.jpg',
     'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/published/2tyred.jpg?1500999622',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/published/275-dmj.jpg?1498403610'
+    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/published/275-dmj.jpg?1498403610',
+    'https://i.redd.it/cmnv6e1po4kz.jpg',
+    'https://i.imgur.com/jYzIzGK.jpg',
+    'https://i.redd.it/1t3g97rs74kz.jpg',
+    'https://i.redd.it/zni2q0pu23kz.jpg',
+    'https://i.redd.it/vev7crii03kz.png',
+    'https://i.redd.it/xwz1k39wv4kz.jpg',
+    'https://i.redd.it/l213ahgos2kz.jpg',
+    'https://i.redd.it/hlmd9uuco3kz.jpg',
+    'https://i.imgur.com/0Yo1Fr4.jpg',
+    'https://i.redd.it/e7qut9ezf2kz.jpg',
+    'https://i.redd.it/4nj3h6wn45kz.jpg',
+    'https://i.redd.it/e4ut3f5rd2kz.jpg',
+    'https://i.pinimg.com/originals/16/19/4a/16194a0fc903c385db95ba8ab8b4c38c.jpg',
+    'https://i.redd.it/hg4hxu8332kz.jpg',
+    'https://i.redd.it/wi4bkjkto4kz.jpg',
+    'https://i.redd.it/96jmckcp76kz.jpg',
+    'https://i.redd.it/fkqxtw3zu2kz.jpg',
+    'https://i.redd.it/m6hm91geo6kz.jpg'
 ]
 
 gifs = [
@@ -106,7 +124,13 @@ gifs = [
     'https://media.tenor.com/images/a7bd6b94430c1e66148d580209e377c5/tenor.gif',
     'https://media.giphy.com/media/3oEdv4hwWTzBhWvaU0/giphy.gif',
     'http://data.whicdn.com/images/201782005/original.gif',
-    'https://media.tenor.com/images/035f033ebba7fae7019e543a81a81233/tenor.gif'
+    'https://media.tenor.com/images/035f033ebba7fae7019e543a81a81233/tenor.gif',
+    'https://i.imgur.com/uPtZeml.gif',
+    'https://i.imgur.com/dmLsSkT.gif',
+    'http://i.imgur.com/u252HlS.gif',
+    'http://i.imgur.com/uGSmw5w.gif',
+    'http://i.imgur.com/ZqoB7Cd.gif',
+    'https://i.imgur.com/uYw2tQo.gif'
 ]
 
 # ================================
@@ -224,7 +248,6 @@ class SetWebhookHandler(webapp2.RequestHandler):
         if url:
             self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
 
-
 class WebhookHandler(webapp2.RequestHandler):
     def post(self):
         urlfetch.set_default_fetch_deadline(60)
@@ -313,11 +336,11 @@ class WebhookHandler(webapp2.RequestHandler):
         # TIMETABLE CALCULATIONS
         nextschday = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
         now = datetime.datetime.now(sg)
-        startterm = datetime.datetime(2017, 6, 24, 0, 0, 0, tzinfo=sg)
+        startterm = datetime.datetime(2017, 9, 9, 0, 0, 0, tzinfo=sg)
         delta = now - startterm
         split = str.split(str(delta))
         week = math.floor(int(split[0])/7 + 1)
-        if week > 10:
+        if week > 10 or week < 1:
             week = 0
         dayofweek = now.weekday()
         
@@ -400,7 +423,6 @@ class WebhookHandler(webapp2.RequestHandler):
                     elif command == '/delhomework':
                         query = Things.query(Things.thing == text[6:])
                         for q in query:
-                            print(q.key.id())
                             target = q.key
                             target.delete()
                             reply("Ok, %s has been deleted." % text)
@@ -540,6 +562,8 @@ class WebhookHandler(webapp2.RequestHandler):
                                 reply(day[1])
                     
                     clearCommand(sender)
+                    counter = int(getHumans(1))
+                    setHumans(1, str(counter+1))
 
 class CustomMessage(webapp2.RequestHandler):
     def get(self):
