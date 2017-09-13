@@ -8,6 +8,7 @@ import time
 import datetime
 import math
 import copy
+import quiz
 
 import secrets
 
@@ -51,6 +52,19 @@ timetable_original = [
 ]
 
 timetable = copy.deepcopy(timetable_original)
+
+nextschday = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
+startterm = datetime.datetime(2017, 9, 9, 0, 0, 0, tzinfo=sg)
+
+def calculateTimetable():
+    global now, week, dayofweek
+    now = datetime.datetime.now(sg)
+    delta = now - startterm
+    split = str.split(str(delta))
+    week = math.floor(int(split[0])/7 + 1)
+    if week > 10 or week < 1:
+        week = 0
+    dayofweek = now.weekday()
 
 imgs = [
     'http://bi.gazeta.pl/im/36/19/14/z21076790IER,23-mlode-pandy-urodzone-w-tym-roku-w-centrum-badaw.jpg',
@@ -144,6 +158,7 @@ class Commands(ndb.Model):
     command = ndb.StringProperty()
     argDate = ndb.DateProperty()
     argText = ndb.StringProperty()
+    state = ndb.StringProperty()
     
 class Humanities(ndb.Model):
     # key name: str(sender)
@@ -178,7 +193,7 @@ def getEnabled(chat_id):
         return es.enabled
     return False
 
-def updateCommand(sender, command, argDate, argText):
+def updateCommand(sender, command, argDate, argText, state):
     c = Commands.get_or_insert(str(sender))
     if command != '':
         c.command = command
@@ -186,6 +201,8 @@ def updateCommand(sender, command, argDate, argText):
         c.argDate = argDate
     if argText != '':
         c.argText = argText
+    if state != '':
+        c.state = state
     c.put()
 
 def clearCommand(sender):
@@ -193,6 +210,7 @@ def clearCommand(sender):
     c.command = ''
     c.argDate = datetime.datetime.min
     c.argText = ''
+    c.state = ''
     c.put()
     
 def getCommand(sender):
@@ -201,7 +219,8 @@ def getCommand(sender):
         command = c.command
         argDate = c.argDate
         argText = c.argText
-    return command, argDate, argText
+        state = c.state
+    return command, argDate, argText, state
 
 def setHumans(sender, subj):
     h = Humanities.get_or_insert(str(sender))
@@ -247,7 +266,7 @@ class SetWebhookHandler(webapp2.RequestHandler):
         url = self.request.get('url')
         if url:
             self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
-
+            
 class WebhookHandler(webapp2.RequestHandler):
     def post(self):
         urlfetch.set_default_fetch_deadline(60)
@@ -333,16 +352,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 'message_id': message_id
             })).read()
         
-        # TIMETABLE CALCULATIONS
-        nextschday = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
-        now = datetime.datetime.now(sg)
-        startterm = datetime.datetime(2017, 9, 9, 0, 0, 0, tzinfo=sg)
-        delta = now - startterm
-        split = str.split(str(delta))
-        week = math.floor(int(split[0])/7 + 1)
-        if week > 10 or week < 1:
-            week = 0
-        dayofweek = now.weekday()
+        calculateTimetable()
         
         humans = getHumans(sender)
         for i in range(0, len(timetable)-1):
@@ -360,12 +370,14 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply('Bot disabled')
                 setEnabled(chat_id, False)
                 
-        def checkCommand(command, date, arg):
+        def checkCommand():
             complete = True
+            
+            command, date, arg, state = getCommand(sender)
             
             # INCOMPLETE COMMANDS
             if command == '/addhomework':
-                if date == datetime.datetime.min:
+                if date < datetime.date(1991, 1, 1):
                     reply("When is this homework due?", keyboard=forcereply)
                     complete = False
                 elif arg == '':
@@ -389,42 +401,51 @@ class WebhookHandler(webapp2.RequestHandler):
                 if arg == '':
                     reply("What subject do you want to search for?", keyboard=forcereply)
                     complete = False
+            elif command == '/test':
+                if arg == '':
+                    qn = random.randint(0, len(quiz.biology)-1)
+                    reply(quiz.biology[qn][0])
+                    state = quiz.biology[qn][1]
+                    updateCommand(sender, command, date, '', state)
+                    complete = False
+            
             if complete == False:
-                updateCommand(sender, command, date, arg)
+                updateCommand(sender, command, date, arg, state)
             
             return complete
             
         if getEnabled(chat_id):
+            
+            command, date, arg, state = getCommand(sender)
+            
             # CONTINUATION OF INCOMPLETE COMMANDS
             if 'reply_to_message' in message and 'username' in message['reply_to_message']['from']:
                 if message['reply_to_message']['from']['username'] == 'threeoheight_bot':
                     # check the context of the incomplete command
-                    incomplete = getCommand(sender)
-                    command = incomplete[0]
-                    date = incomplete[1]
-                    arg = incomplete[2]
-                    
                     if command == '/sethumans' or command == '/next':
                         if arg == '':
                             arg = text
-                        complete = checkCommand(command, date, arg)
-                        if complete:
-                            text = "%s %s" % (command, arg)
                     elif command == '/addhomework':
                         if date < datetime.date(1991, 1, 1):
                             date = datetime.datetime.strptime(text+'/2017', "%d/%m/%Y")
                         elif arg == '':
                             arg = text
-                        
-                        complete = checkCommand(command, date, arg)
-                        if complete:
-                            text = "%s %s %s" % (command, datetime.datetime.strftime(date, "%d/%m"), arg)
                     elif command == '/delhomework':
                         query = Things.query(Things.thing == text[6:])
                         for q in query:
                             target = q.key
                             target.delete()
                             reply("Ok, %s has been deleted." % text)
+                        clearCommand(sender)
+                        return
+                    elif command == '/test':
+                        reply(state)
+                        clearCommand(sender)
+                        return
+                    
+                    updateCommand(sender, command, date, arg, state)
+            
+            # NEW COMMANDS
             if text.startswith('/'):
                 text = str(text).replace('@threeoheight_bot', '')
                 splitCommand = str.split(text)
@@ -432,142 +453,143 @@ class WebhookHandler(webapp2.RequestHandler):
                 command = splitCommand[0]
                 date = datetime.datetime.min
                 arg = ''
-
                 try:
                     date = datetime.datetime.strptime(splitCommand[1]+'/2017', "%d/%m/%Y")
                 except:
                     arg = ' '.join(splitCommand[1:])
                 else:
                     arg = ' '.join(splitCommand[2:])
-                    
-                complete = checkCommand(command, date, arg)
                 
-                # COMPLETE COMMANDS
-                if complete:
-                    
-                    if arg == '/cancel' or command == '/cancel':
-                        clearCommand(sender)
-                        reply("Command cancelled")
-                    
-                    # TIMETABLE
-                    elif command == '/today':
-                        index = dayofweek
-                        if week % 2 == 0: #even week
-                            index += 7
-                        reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
-                    elif command == '/tomorrow':
-                        index = dayofweek
-                        if week % 2 == 0: #even week
-                            index += 7
-                        index = nextschday[index]
-                        reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+                updateCommand(sender, command, date, arg, '')
+                
+            complete = checkCommand()
+            command, date, arg, state = getCommand(sender)
 
-                    elif command == '/weekno':
-                        if dayofweek <= 4:
-                            reply("This week is week %d" % week)
-                        else:
-                            reply("Next week is week %d" % week)
-
-                    elif command == '/next':
-                        subj = arg
-                        index = dayofweek
-                        if week % 2 == 0: #even week
-                            index += 7
-                        index = nextschday[index]
-                        start = index
-
-                        while True:
-                            if subj in timetable[index][1]:
-                                oddity = week % 2
-                                if 'odd' in timetable[index][0]:
-                                    oddity2 = 1
-                                else:
-                                    oddity2 = 0
-
-                                weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-                                day = weekdays[index%5]
-                                diff = index%5 - dayofweek
-
-                                if oddity == oddity2:
-                                    thisnext = 'this'
-                                    if diff < 0:
-                                        thisnext = 'next next'
-                                        diff += 14
-                                else:
-                                    thisnext = 'next'
-                                    diff += 7
-                                d = now + datetime.timedelta(diff)
-
-                                reply("The next %s lesson is %s %s, %d/%d (%s)" % (subj, thisnext, day, d.day, d.month, timetable[index][0]))
-                                break
-                            else:
-                                index = (index + 1) % 10
-
-                            if index == start:
-                                reply("Subject not found.")
-                                break
-                    elif command == '/sethumans':
-                        setHumans(sender, arg)
-                        reply("Humanities subject for %s has been set to %s" % (fr['first_name'], getHumans(sender)))
-                    
-                    # HOMEWORK
-                    elif command == '/addhomework':
-                        addThing(time.strftime("%d%m%Y%I%M%S"), date, arg)
-                        reply("Ok, %s has been set." % arg)
-                    elif command == '/gethomework' or command == '/thisweek':
-                        if command == '/thisweek':
-                            query = query.filter(Things.duedate < now + datetime.timedelta(days=7))
-
-                        response = ""
-                        for q in query:
-                            response = response + q.duedate.strftime("%d/%m")+' '+q.thing + '\n'
-
-                        if response == "":
-                            reply("There's no homework! Rejoice!")
-                        else:
-                            reply(response)
-
-                    # MESSAGES
-                    elif command == '/save':
-                        tags = str.split(arg)
-                        if 'reply_to_message' in message:
-                            from_chat_id = str(message['reply_to_message']['chat']['id'])
-                            message_id = str(message['reply_to_message']['message_id'])
-                        else:
-                            from_chat_id = str(chat_id)
-                            message_id = str(message_id)
-                        saveMessage(time.strftime("%d%m%Y%I%M%S"), from_chat_id, message_id, tags)
-                        reply("Message saved.")
-                    elif command == '/find':
-                        query = Messages.query(Messages.tags == arg)
-                        for q in query:
-                            forward(q.from_chat_id, q.message_id)
-                    
-                    # BIRTHDAYS
-                    elif command == '/nextbirthday':
-                        # really roundabout way of doing this but i don't know how else to do this
-                        query = Birthdays.query(Birthdays.birthday > now).order(-Birthdays.birthday)
-                        for q in query:
-                            response = "%s %s" % (q.birthday.strftime('%d/%m'), q.name)
-                        reply(response)
-                        
-                    # MISCELLANEOUS
-                    elif command == '/cute':
-                        imgvsgif = random.randint(0,1)
-                        if imgvsgif == 0: #img
-                            url = imgs[random.randint(0, len(imgs)-1)]
-                            reply(img=urllib2.urlopen(url).read())
-                        else:
-                            url = gifs[random.randint(0, len(gifs)-1)]
-                            reply(gif=urllib2.urlopen(url).read())
-                    else:
-                        for day in timetable:
-                            if day[0] in text:
-                                reply(day[1])
-                    
+            # COMPLETE COMMANDS
+            if complete:
+                if arg == '/cancel' or command == '/cancel':
                     clearCommand(sender)
-                    counter = int(getHumans(1))
-                    setHumans(1, str(counter+1))
+                    reply("Command cancelled")
+
+                # TIMETABLE
+                elif command == '/today':
+                    index = dayofweek
+                    if week % 2 == 0: #even week
+                        index += 7
+                    reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+                elif command == '/tomorrow':
+                    index = dayofweek
+                    if week % 2 == 0: #even week
+                        index += 7
+                    index = nextschday[index]
+                    reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+
+                elif command == '/weekno':
+                    if dayofweek <= 4:
+                        reply("This week is week %d" % week)
+                    else:
+                        reply("Next week is week %d" % week)
+
+                elif command == '/next':
+                    subj = arg
+                    index = dayofweek
+                    if week % 2 == 0: #even week
+                        index += 7
+                    index = nextschday[index]
+                    start = index
+
+                    while True:
+                        if subj in timetable[index][1]:
+                            oddity = week % 2
+                            if 'odd' in timetable[index][0]:
+                                oddity2 = 1
+                            else:
+                                oddity2 = 0
+
+                            weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                            day = weekdays[index%5]
+                            diff = index%5 - dayofweek
+
+                            if oddity == oddity2:
+                                thisnext = 'this'
+                                if diff < 0:
+                                    thisnext = 'next next'
+                                    diff += 14
+                            else:
+                                thisnext = 'next'
+                                diff += 7
+                            d = now + datetime.timedelta(diff)
+
+                            reply("The next %s lesson is %s %s, %d/%d (%s)" % (subj, thisnext, day, d.day, d.month, timetable[index][0]))
+                            break
+                        else:
+                            index = (index + 1) % 10
+
+                        if index == start:
+                            reply("Subject not found.")
+                            break
+                elif command == '/sethumans':
+                    setHumans(sender, arg)
+                    reply("Humanities subject for %s has been set to %s" % (fr['first_name'], getHumans(sender)))
+
+                # HOMEWORK
+                elif command == '/addhomework':
+                    addThing(time.strftime("%d%m%Y%I%M%S"), date, arg)
+                    reply("Ok, %s has been set." % arg)
+                elif command == '/gethomework' or command == '/thisweek':
+                    if command == '/thisweek':
+                        query = query.filter(Things.duedate < now + datetime.timedelta(days=7))
+
+                    response = ""
+                    for q in query:
+                        response = response + q.duedate.strftime("%d/%m")+' '+q.thing + '\n'
+
+                    if response == "":
+                        reply("There's no homework! Rejoice!")
+                    else:
+                        reply(response)
+
+                # MESSAGES
+                elif command == '/save':
+                    tags = str.split(arg)
+                    if 'reply_to_message' in message:
+                        from_chat_id = str(message['reply_to_message']['chat']['id'])
+                        message_id = str(message['reply_to_message']['message_id'])
+                    else:
+                        from_chat_id = str(chat_id)
+                        message_id = str(message_id)
+                    saveMessage(time.strftime("%d%m%Y%I%M%S"), from_chat_id, message_id, tags)
+                    reply("Message saved.")
+                elif command == '/find':
+                    query = Messages.query(Messages.tags == arg)
+                    for q in query:
+                        forward(q.from_chat_id, q.message_id)
+
+                # BIRTHDAYS
+                elif command == '/nextbirthday':
+                    # really roundabout way of doing this but i don't know how else to do this
+                    query = Birthdays.query(Birthdays.birthday > now).order(-Birthdays.birthday)
+                    for q in query:
+                        response = "%s %s" % (q.birthday.strftime('%d/%m'), q.name)
+                    reply(response)
+
+                # MISCELLANEOUS
+                elif command == '/cute':
+                    imgvsgif = random.randint(0,1)
+                    if imgvsgif == 0:
+                        url = imgs[random.randint(0, len(imgs)-1)]
+                        reply(img=urllib2.urlopen(url).read())
+                    else:
+                        url = gifs[random.randint(0, len(gifs)-1)]
+                        reply(gif=urllib2.urlopen(url).read())
+                else:
+                    for day in timetable:
+                        if day[0] in text:
+                            reply(day[1])
+
+                clearCommand(sender)
+                counter = int(getHumans(1))
+                setHumans(1, str(counter+1))
 
 class CustomMessage(webapp2.RequestHandler):
     def get(self):
@@ -597,14 +619,7 @@ class CheckTimetable(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
         
-        now = datetime.datetime.now(sg)
-        startterm = datetime.datetime(2017, 9, 9, 0, 0, 0, tzinfo=sg)
-        delta = now - startterm
-        split = str.split(str(delta))
-        week = math.floor(int(split[0])/7 + 1)
-        if week > 10:
-            week = 0
-        dayofweek = now.weekday()
+        calculateTimetable()
         
         tmr = (dayofweek + 1)%7
         if tmr <= 4: # if tomorrow is a weekday
