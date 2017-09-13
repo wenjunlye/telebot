@@ -404,7 +404,6 @@ class WebhookHandler(webapp2.RequestHandler):
                     date = incomplete[1]
                     arg = incomplete[2]
                     
-                    
                     if command == '/sethumans' or command == '/next':
                         if arg == '':
                             arg = text
@@ -451,6 +450,11 @@ class WebhookHandler(webapp2.RequestHandler):
                         reply("Command cancelled")
                     
                     # TIMETABLE
+                    elif command == '/today':
+                        index = dayofweek
+                        if week % 2 == 0: #even week
+                            index += 7
+                        reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
                     elif command == '/tomorrow':
                         index = dayofweek
                         if week % 2 == 0: #even week
@@ -594,7 +598,7 @@ class CheckTimetable(webapp2.RequestHandler):
         urlfetch.set_default_fetch_deadline(60)
         
         now = datetime.datetime.now(sg)
-        startterm = datetime.datetime(2017, 6, 24, 0, 0, 0, tzinfo=sg)
+        startterm = datetime.datetime(2017, 9, 9, 0, 0, 0, tzinfo=sg)
         delta = now - startterm
         split = str.split(str(delta))
         week = math.floor(int(split[0])/7 + 1)
