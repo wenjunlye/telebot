@@ -149,6 +149,8 @@ class Commands(ndb.Model):
     command = ndb.StringProperty()
     argDate = ndb.DateProperty()
     argText = ndb.StringProperty()
+    argText2 = ndb.StringProperty()
+    argText3 = ndb.StringProperty()
     state = ndb.StringProperty()
     
 class Humanities(ndb.Model):
@@ -184,7 +186,7 @@ def getEnabled(chat_id):
         return es.enabled
     return False
 
-def updateCommand(sender, command, argDate, argText, state):
+def updateCommand(sender, command='', argDate=datetime.datetime.min, argText='', argText2='', argText3='', state=''):
     c = Commands.get_or_insert(str(sender))
     if command != '':
         c.command = command
@@ -192,6 +194,10 @@ def updateCommand(sender, command, argDate, argText, state):
         c.argDate = argDate
     if argText != '':
         c.argText = argText
+    if argText2 != '':
+        c.argText2 = argText2
+    if argText3 != '':
+        c.argText3 = argText3
     if state != '':
         c.state = state
     c.put()
@@ -201,6 +207,8 @@ def clearCommand(sender):
     c.command = ''
     c.argDate = datetime.datetime.min
     c.argText = ''
+    c.argText2 = ''
+    c.argText3 = ''
     c.state = ''
     c.put()
     
@@ -210,8 +218,10 @@ def getCommand(sender):
         command = c.command
         argDate = c.argDate
         argText = c.argText
+        argText2 = c.argText2
+        argText3 = c.argText3
         state = c.state
-        return command, argDate, argText, state
+        return command, argDate, argText, argText2, argText3, state
 
 def setHumans(sender, subj):
     h = Humanities.get_or_insert(str(sender))
@@ -365,7 +375,7 @@ class WebhookHandler(webapp2.RequestHandler):
             complete = True
             
             try:
-                command, date, arg, state = getCommand(sender)
+                command, date, arg, arg2, arg3, state = getCommand(sender)
             except:
                 logging.info("no user found")
             
@@ -397,22 +407,29 @@ class WebhookHandler(webapp2.RequestHandler):
                     complete = False
             elif command == '/test':
                 if arg == '':
-                    topic = random.choice(list(quiz.biology.keys()))
+                    reply("What subject would you like to be tested on?", keyboard=forcereply)
+                    complete = False
+                else:
+                    if arg2 in quiz.biology:
+                        topic = arg2
+                    else:
+                        topic = random.choice(list(quiz.biology.keys()))
+                    
                     qn = random.randint(0, len(quiz.biology[topic])-1)
                     reply(quiz.biology[topic][qn][0], keyboard=forcereply)
                     state = quiz.biology[topic][qn][1]
-                    updateCommand(sender, command, date, '', state)
+                    updateCommand(sender, state=state)
                     complete = False
             
             if complete == False:
-                updateCommand(sender, command, date, arg, state)
+                updateCommand(sender, command, date, arg, arg2, arg3, state)
             
             return complete
             
         if getEnabled(chat_id):
             
             try:
-                command, date, arg, state = getCommand(sender)
+                command, date, arg, arg2, arg3, state = getCommand(sender)
             except:
                 logging.info("no user found")
             
@@ -437,18 +454,24 @@ class WebhookHandler(webapp2.RequestHandler):
                         clearCommand(sender)
                         return
                     elif command == '/test':
-                        percentage = difflib.SequenceMatcher(None, text, state).ratio()*100
-                        reply("Your answer is %0.f%% correct! The correct answer is:\n%s" % (percentage, state))
-                        topic = random.choice(list(quiz.biology.keys()))
-                        qn = random.randint(0, len(quiz.biology[topic])-1)
-                        reply(quiz.biology[topic][qn][0], keyboard=forcereply)
-                        state = quiz.biology[topic][qn][1]
-                        updateCommand(sender, command, date, '', state)
-                        complete = False
-                        # clearCommand(sender)
-                        return
+                        if arg == '':
+                            arg = text
+                        else:
+                            percentage = difflib.SequenceMatcher(None, text, state).ratio()*100
+                            reply("Your answer is %0.f%% correct! The correct answer is:\n%s" % (percentage, state))
+                            
+                            topic = random.choice(list(quiz.biology.keys()))
+                            if arg2 != '':
+                                topic = arg2
+                            qn = random.randint(0, len(quiz.biology[topic])-1)
+                            reply(quiz.biology[topic][qn][0], keyboard=forcereply)
+                            state = quiz.biology[topic][qn][1]
+                            updateCommand(sender, state=state)
+                            complete = False
+                            # clearCommand(sender)
+                            return
                     
-                    updateCommand(sender, command, date, arg, state)
+                    updateCommand(sender, command, date, arg, arg2, arg3, state)
             
             # NEW COMMANDS
             if text.startswith('/'):
@@ -458,18 +481,27 @@ class WebhookHandler(webapp2.RequestHandler):
                 command = splitCommand[0]
                 date = datetime.datetime.min
                 arg = ''
-                try:
-                    date = datetime.datetime.strptime(splitCommand[1]+'/2017', "%d/%m/%Y")
-                except:
-                    arg = ' '.join(splitCommand[1:])
-                else:
-                    arg = ' '.join(splitCommand[2:])
+                arg2 = ''
+                arg3 = ''
                 
-                updateCommand(sender, command, date, arg, '')
+                if command == '/test':
+                    if len(splitCommand) > 1:
+                        arg = splitCommand[1]
+                        if len(splitCommand) > 2:
+                            arg2 = ' '.join(splitCommand[2:])
+                else:
+                    try:
+                        date = datetime.datetime.strptime(splitCommand[1]+'/2017', "%d/%m/%Y")
+                    except:
+                        arg = ' '.join(splitCommand[1:])
+                    else:
+                        arg = ' '.join(splitCommand[2:])
+                
+                updateCommand(sender, command, date, arg, arg2, arg3, '')
                 
             complete = checkCommand()
             try:
-                command, date, arg, state = getCommand(sender)
+                command, date, arg, arg2, arg3, state = getCommand(sender)
             except:
                 logging.info("no user found")
 
