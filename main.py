@@ -1,15 +1,6 @@
-import StringIO
-import json
-import logging
-import random
-import urllib
-import urllib2
-import time
-import datetime
-import math
-import copy
-import quiz
+import StringIO, json, logging, random, urllib, urllib2, time, datetime, math, copy, difflib
 
+import quiz
 import secrets
 
 # for sending images
@@ -220,7 +211,7 @@ def getCommand(sender):
         argDate = c.argDate
         argText = c.argText
         state = c.state
-    return command, argDate, argText, state
+        return command, argDate, argText, state
 
 def setHumans(sender, subj):
     h = Humanities.get_or_insert(str(sender))
@@ -373,7 +364,10 @@ class WebhookHandler(webapp2.RequestHandler):
         def checkCommand():
             complete = True
             
-            command, date, arg, state = getCommand(sender)
+            try:
+                command, date, arg, state = getCommand(sender)
+            except:
+                logging.info("no user found")
             
             # INCOMPLETE COMMANDS
             if command == '/addhomework':
@@ -403,9 +397,10 @@ class WebhookHandler(webapp2.RequestHandler):
                     complete = False
             elif command == '/test':
                 if arg == '':
-                    qn = random.randint(0, len(quiz.biology)-1)
-                    reply(quiz.biology[qn][0])
-                    state = quiz.biology[qn][1]
+                    topic = random.choice(list(quiz.biology.keys()))
+                    qn = random.randint(0, len(quiz.biology[topic])-1)
+                    reply(quiz.biology[topic][qn][0], keyboard=forcereply)
+                    state = quiz.biology[topic][qn][1]
                     updateCommand(sender, command, date, '', state)
                     complete = False
             
@@ -416,7 +411,10 @@ class WebhookHandler(webapp2.RequestHandler):
             
         if getEnabled(chat_id):
             
-            command, date, arg, state = getCommand(sender)
+            try:
+                command, date, arg, state = getCommand(sender)
+            except:
+                logging.info("no user found")
             
             # CONTINUATION OF INCOMPLETE COMMANDS
             if 'reply_to_message' in message and 'username' in message['reply_to_message']['from']:
@@ -439,8 +437,15 @@ class WebhookHandler(webapp2.RequestHandler):
                         clearCommand(sender)
                         return
                     elif command == '/test':
-                        reply(state)
-                        clearCommand(sender)
+                        percentage = difflib.SequenceMatcher(None, text, state).ratio()*100
+                        reply("Your answer is %0.f%% correct! The correct answer is:\n%s" % (percentage, state))
+                        topic = random.choice(list(quiz.biology.keys()))
+                        qn = random.randint(0, len(quiz.biology[topic])-1)
+                        reply(quiz.biology[topic][qn][0], keyboard=forcereply)
+                        state = quiz.biology[topic][qn][1]
+                        updateCommand(sender, command, date, '', state)
+                        complete = False
+                        # clearCommand(sender)
                         return
                     
                     updateCommand(sender, command, date, arg, state)
@@ -463,7 +468,10 @@ class WebhookHandler(webapp2.RequestHandler):
                 updateCommand(sender, command, date, arg, '')
                 
             complete = checkCommand()
-            command, date, arg, state = getCommand(sender)
+            try:
+                command, date, arg, state = getCommand(sender)
+            except:
+                logging.info("no user found")
 
             # COMPLETE COMMANDS
             if complete:
