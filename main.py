@@ -409,15 +409,21 @@ class WebhookHandler(webapp2.RequestHandler):
                 if arg == '':
                     reply("What subject would you like to be tested on?", keyboard=forcereply)
                     complete = False
+                if arg not in quiz.contents:
+                    reply("Subject not found.")
                 else:
-                    if arg2 in quiz.biology:
+                    subject = quiz.contents[arg]
+                    if arg2 == 'topics':
+                        reply(', '.join(list(subject.keys())))
+                        return
+                    elif arg2 in subject:
                         topic = arg2
                     else:
-                        topic = random.choice(list(quiz.biology.keys()))
+                        topic = random.choice(list(subject.keys()))
                     
-                    qn = random.randint(0, len(quiz.biology[topic])-1)
-                    reply(quiz.biology[topic][qn][0], keyboard=forcereply)
-                    state = quiz.biology[topic][qn][1]
+                    qn = random.randint(0, len(subject[topic])-1)
+                    reply(subject[topic][qn][0], keyboard=forcereply)
+                    state = subject[topic][qn][1]
                     updateCommand(sender, state=state)
                     complete = False
             
@@ -458,14 +464,20 @@ class WebhookHandler(webapp2.RequestHandler):
                             arg = text
                         else:
                             percentage = difflib.SequenceMatcher(None, text, state).ratio()*100
-                            reply("Your answer is %0.f%% correct! The correct answer is:\n%s" % (percentage, state))
+                            response = "Your answer is %0.f%% correct!" % percentage
+                            if percentage < 100:
+                                response = "%s The correct answer is:\n%s" % (response, state)
+                            reply(response)
                             
-                            topic = random.choice(list(quiz.biology.keys()))
-                            if arg2 != '':
+                            subject = quiz.contents[arg]
+                            if arg2 in subject:
                                 topic = arg2
-                            qn = random.randint(0, len(quiz.biology[topic])-1)
-                            reply(quiz.biology[topic][qn][0], keyboard=forcereply)
-                            state = quiz.biology[topic][qn][1]
+                            else:
+                                topic = random.choice(list(subject.keys()))
+
+                            qn = random.randint(0, len(subject[topic])-1)
+                            reply(subject[topic][qn][0], keyboard=forcereply)
+                            state = subject[topic][qn][1]
                             updateCommand(sender, state=state)
                             complete = False
                             # clearCommand(sender)
@@ -514,9 +526,12 @@ class WebhookHandler(webapp2.RequestHandler):
                 # TIMETABLE
                 elif command == '/today':
                     index = dayofweek
-                    if week % 2 == 0: #even week
-                        index += 7
-                    reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+                    if index == 5 or index == 6:
+                        reply("There's no school today!")
+                    else:
+                        if week % 2 == 0: #even week
+                            index += 5
+                        reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
                 elif command == '/tomorrow':
                     index = dayofweek
                     if week % 2 == 0: #even week
@@ -552,7 +567,7 @@ class WebhookHandler(webapp2.RequestHandler):
 
                             if oddity == oddity2:
                                 thisnext = 'this'
-                                if diff < 0:
+                                if diff < 0 and dayofweek <= 4:
                                     thisnext = 'next next'
                                     diff += 14
                             else:
