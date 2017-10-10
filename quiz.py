@@ -83,6 +83,11 @@ biology = {
         ["What happens to the iris in dim light?", "circular muscles relax\nradical muscles contract\npupil dilates"],
         ["What happens to the lens when looking at a far object?", "light rays are parallel\nciliary muscles relax\nsuspensory ligament becomes taut\nlens become thinner"],
         ["What happens to the lens when looking at a near object?", "light rays are divergent\nciliary muscles contract\nsuspensory ligament becomes slack\nlens become rounder"]
+    ],
+    'reproduction in plants': [
+        ["Explain the process of double fertilisation.", "pollen grain lands on stigma\nsugary fluid secreted by stigma causes germaination of pollen grain\nenzymes digest the tissue of the style, forming a pollen tube that extends towards the ovule\npollen tube nucleus directs growth of pollen tube\ngenerative nucleus divides to form 2 male gametes\npollen tube reaches micropyle, absorbs saps and bursts, releasing the 2 male gametes\n1 male gamete + ovum -> diploid zygote\n1 male gamete + 2 polar nuclei -> triploid endosperm nucleus"],
+        ["What happens to the integuments post-fertilisation?", "seed coat"],
+        ["Explain the process of tissue culture.", "remove the explant from the meristematic region of the plant\nsterilise the explant by washing it in dilute detergent and bleach\nplace explant in nutrient solution with auxin and place on shaker\ncallus pieces are formed and their cells are totipotent\ntransfer callus pieces into agar medium with cytokinin to induce shoot formation\ntransfer shoot to another agar medium with auxin to induce root formation\ntransfer to soil in a greenhouse with constant environmental conditions via greenhouse\ntransfer plants to field"]
     ]
 }
 
@@ -104,7 +109,7 @@ geography = {
         ["What are the political impacts of inadequate food consumption?", "social unrest"],
         ["What are the social impacts of inadequate food consumption?", "scavenging"],
         ["What are some statistics about malnutrition in the world?", "75% of people in the Democratic Republic of Congo suffer from malnutrition"],
-        ["What is an example of ill-health due to inadequate food consumption?", "inadequate consumption of fruits and vegetables leads to vitamin A deficiency, which may cause visual impairment and blindness\nan estimated 250,000 to 500,000 children become blind every year in LDCs"],
+        ["What is an example of ill-health due to inadequate food consumption?", "inadequate consumption of fruits and vegetables leads to vitamin A deficiency, which may cause visual impairment and blindness\nan estimated 250 000 to 500 000 children become blind every year in LDCs"],
         ["What are some statistics about starvation in the world?", "5 million people were threatened with starvation in Mali in 2012"],
         ["What is a case study of lower productivity due to inadequate food consumption?", "Sierra Leone, India, Sri Lanka and Ethiopia\nlow levels of nutrition intake were associated with lower levels of productivity\nfarmers are less innovative, less experimental or unable to implement improvements"],
         ["What is a case study of long-term debt due to inadequate food consumption?", "food supplied as aid is up to 34% more expensive than if purchased locally\nLDCs incurred losses amounting to US$5-7 billion"],
@@ -121,8 +126,35 @@ geography = {
         ["What are the benefits of GM foods?", "increased food supply\nincreased income for farmers\nreduced environmental pollution\nimproved nutritional value of food"],
         ["What are some crops that are GM foods?", "soya bean, corn, canola, rice"],
         ["What qualities do GM foods have?", "increased resistance to diseases\ngrow faster"],
-        ["How does GM foods increase income for farmers?", "increased resistance to disease means less crops are damaged and output increases\nability to stay fresh for a longer time allows for export to countries further away and increases income earned"],
-        ["How does GM foods increase food supply?", "increased yield\nfaster growth, more harvests per year\nincreased shelf life of crops"]
+        ["How do GM foods increase income for farmers?", "increased resistance to disease means less crops are damaged and output increases\nability to stay fresh for a longer time allows for export to countries further away and increases income earned"],
+        ["How do GM foods increase food supply?", "increased yield\nfaster growth, more harvests per year\nincreased shelf life of crops"],
+        ["What are the statistics for the unequal consumption of food in the world?", "average amount of food available is 2800 kcal per person, average amount of food needed is 2586 kcal per person\nrichest 20% consume 50% of meat and fish vs poorest 20% consume 5% of meat in the world"],
+        ["What are the physical causes of food shortage?", "climate change, extreme weather events, pests"],
+        ["What are the negative impacts of climate change on food supply?", "causes previously usable farmland to become suitable or farming\nshrinking of glaciers due to increased temperatures causes lack of water for irrigation" ],
+        ["What are the positive impacts of climate change on food supply?", "may lengthen growing seasons for some regions\nmay allow for farming in areas previously unsuitable to farm in"], 
+        ["What are some statistics on the impact of climate change on food supply?", "due to increasing temperatures food production in Canada, China, northern US etc increased by 35%\nIPCC: glaciers in Himalayas may melt entirely by 2025, dependent on by farmers in China and India for plant irrigation via glacial melt in major river"],
+        ["How does extreme weather events cause food shortage?", "droughts, cold waves, heat waves and tropical cyclones abuse crop damage, make it difficult to grow crops, decreasing food production\nworsened in countries unable to recover from loss of crops"],
+        ["What are some statistics on extreme weather events causing food shortage?", "Cyclone Yasi destroyed half of Queensland's crops\nstate is one of the world's top sugar cane  exporters\n1/3 of its crops in the way of cyclone\nresulting in in losses of $500 million"],
+        ["What are some statistics on pests causing food shortages?", "Liberia was in a state of emergency in 2009 due to caterpillar infestation\naffected 46 villages\nworsened already serious food shortage problem"],
+        ["What are the political causes to food shortage?", "civil strife, poor governance"],
+        ["How does civil strife cause food shortage?", "when the country experiences major internal conflicts, it can lead to dispute over control of resources that affect food production\nlandmines could reduce or stop food production during or after conflict"],
+        ["What are some statistics on ow civil strife causes food shortage?", "critical shortge of food, water and medical supplies in Houla, Syria\nfamilies who normally relied on farming and cattle ranching sold land to buy food\neconomic cycle disrupted"],
+        ["How does poor governance cause food shortage?", "corruption, policy errors, inability to implement food policies can cause food shortage"],
+        ["What are some statistics on poor governance causing food shortage?", "40,000 villagers in Madya Pradesh, India were deprived of farm land\nland used to develop mining, steel plant, ports\nvillagers lost means to produce food, left with extremely limited income to buy food"],
+        ["What are economic factors that causes food shortage?", "food policy, increasing cost of fertiliser and transport, demand from emerging economies, converting farmland to industrial production"],
+        ["How does food policy affect food supply?", "stockpiling helps ensure food stability during emergencies, but may cause old shortages in other countries\nfood subsidies, which is money paid bu governments or organisations to make food more affordable, help ensure that the poor can afford food"], 
+        ["What are some statistics on how stockpiling affects food supply?", "Algeria bought 800,000 tones of wheat for stockpiling\ncaused Saudi Arabia to double stockpile, and Indonesia to buy 4x usual amount\ncaused decreased food supply worldwide, causing rices to increase, worsening food shortage in some LDCs"], 
+        ["What are some statistics on food subsidies?", "the US government distributed US$74.6 billion worth of subsidies to 47.7 million Americans in Massachusetts in the form of food stamps given to people with low income\nSri Lanka gave discounted rations to half of population regardless of income before 1979, causing wealthy to benefit from rations while poor and needy still experiencing food shortage. After 1979, the distribution was changed to income based distribution, increasing calorie consumption by 12% among poorest 20%"], 
+        ["How does the increase in cost of fertiliser and transport affect food supply?", "increase in cost of fertilisers, causes cost of food production to increase, increasing food price\nincrease in fuel cost, increase cost of transport and machine operation, increase cost of food production\nsince poor people already spend large proportion of income n food, increase in price means they may not ge enough food to meet nutritional needs"],
+        ["What are some statistics for the increase of cost of fertiliser and transport?", "world crude oil prices increase by 10.3% in 2011, causing Kazakhstan, a major wheat producer, increased its price of exported wheat to neighbouring countries"],
+        ["How does demand from emerging economies cause food shortage?", "Brazil, Russia, India and China (BRIC) have increased food demand, especially meat and fish demand\ndue to rapidly growing middle class with increased urhasing power and changing food preferences\ncaused depletion of global food inventories, especially grains\nmay result in food shortage in poorer countries"], 
+        ["How does converting farmland to industrial production cause food shortage?", "cash crops are more profitable than food crops such as biofuels like corn,  sugar cane, and palm oil\nproduction of crash crops increase due to increased demand"], 
+        ["What are some statistics on converting farmland to industrial production?", "according to the US department of agriculture in 2009, 25% of food crops grown in USA are fuels instead of food crops, which would have been able to feed 330 million people for a year"], 
+        ["What are social factors of food shortage?", "lack of accessibility, lack of logistics of food distribution, rapid population growth"],
+        ["How does lack of accessibility cause food shortage?", "how easily residents can reach food available is dependent on transport infrastructure like roads, rail links and number and location of food outlets available\nwhen links are unavailable or food outlets are few and far apart, people may not be able to obtain fresh produce, causing food shortage"], 
+        ["How does the lack of logistics of food distribution cause food shortage?", "as food stability - the movement of food from farms to retail shops - depends on good transport network, which may be affected by physical barriers sh as mountains or events like landslides"], 
+        ["What are some statistics on how the lack of logistics of food distribution affect food shortage?", "Timor Leste experiences food shortages between harvests, but are unable to receive logistical help in numerous remote parts of the country"],
+        ["What are some statistics on rapid population growth affecting food supply?", "in Sub-Saharan Africa, 75% of Africans will have to rely on food aid by 2025\nalready small amount of farm land declining due to increasing temperatures\nworsened by high population growth in bth rural and urban areas"]
     ],
     'health and diseases': [
         ["What are the social factors causing the spread of malaria?", "poor drainage and stagnant water, improper sanitation, overcrowded living conditions"],
@@ -145,7 +177,19 @@ geography = {
 
 integrated_humanities = {
     'un': [
-        
+        ["What is the context to a successful peacekeeping mission?", "pressure to successfully bring peace back\nno vested interests among member states\nmission is on high priority\n\ncombat fatigue\nno incentive to prolong war\nno support from foreign power"],
+        ["What is the context to an unsuccessful peacekeeping mission?", "vested interests of member countries\nmission is not on high priority\nUN involvement in other conflicts; resources stretched thin\n\nstrong incentive to prolong war\nexternal suport from foreign powers"],
+        ["What are the main aims of UN peacekeeping missions?", "monitor and verify ceasefire\ndisarm, demobilise, reintegrate troops\nensure fair elections\ntackle humanitarian crisis"],
+        ["Why is disarmament and demobilisation important to the peacekeeping mission?", "eliminates inclination for warring factions to return to using violent means"],
+        ["Why is reintegration of troops important to the peacekeeping mission?", "provide new lives and purpose for rebels\npeople now share a common goal of rebuilding country"],
+        ["Why is the trust between warring factions important to the peacekeeping mission?", "both parties trust that the other faction will also disarm\nthey need not fear being militarily disadvantaged"],
+        ["Why are the correct incentives and disincentives important to the peacekeeping mission?", "warring factions know that it is illogical to continue fighting\nmore inclined to lay down arms for peace"],
+        ["Why is humanitarian aid important to the peacekeeping mission?", "allows for transition into peacebuilding\nensures long-term stability"],
+        ["How much manpower did ONUMOZ have?", "8300 troops"],
+        ["What humanitarian aid did ONUMOZ provide Mozambique?", "poverty eradication\nencouraged all school-aged militants to go to school\nhelped 3.7 million people displaced by war resettle\nprotect human rights\nchange from violence-oriented mindset to pro-development"],
+        ["How successful was DDR in Mozambique?", "76 000 soldiers disarmed and demobiliseds\n150 000 weapons collected"],
+        ["How much manpower did UNAVEM II have?", "350 unarmed military observers"],
+        ["How successful was DDR in Angola?", "delayed and incomplete\n37% of MPLA and 85% of UNITA troops demobilised by deadline\nonly 8 800 had joined the joint army"]
     ]
 }
 

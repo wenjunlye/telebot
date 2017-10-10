@@ -13,7 +13,6 @@ from google.appengine.ext import ndb
 import webapp2
 
 TOKEN = secrets.token
-
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 classID = secrets.class_id
@@ -29,18 +28,18 @@ class SG(datetime.tzinfo):
 
 sg = SG()
 
-timetable_original = [
-    ['/oddmonday',     'CLC, Humans, LA\nIM, Chem'],
-    ['/oddtuesday',    'Bio, HCL, PE\nLA, Chem(lab)'],
-    ['/oddwednesday',  'IM, LA, Humans\nIH, CCE'],
-    ['/oddthursday',   'IM, PE, HCL\nHumans, LA'],
-    ['/oddfriday',     'IH, Bio(lab), IM\nHCL, Chem, LA'],
-    ['/evenmonday',    'HCL, PE\nIM'],
-    ['/eventuesday',   'HCL, LA, Bio(lab)\nHumans, Chem(lab)'],
-    ['/evenwednesday', 'Humans, IH, IM\nLA, CCE'],
-    ['/eventhursday',  'PE, LA, Bio\nIM, Assembly'],
-    ['/evenfriday',    'IH, LA, Bio\nChem, IM, HCL']
-]
+timetable_original = {
+    '/oddmonday': 'CLC, Humans, LA\nIM, Chem',
+    '/oddtuesday': 'Bio, HCL, PE\nLA, Chem(lab)',
+    '/oddwednesday': 'IM, LA, Humans\nIH, CCE',
+    '/oddthursday': 'IM, PE, HCL\nHumans, LA',
+    '/oddfriday': 'IH, Bio(lab), IM\nHCL, Chem, LA',
+    '/evenmonday': 'HCL, PE\nIM',
+    '/eventuesday': 'HCL, LA, Bio(lab)\nHumans, Chem(lab)',
+    '/evenwednesday': 'Humans, IH, IM\nLA, CCE',
+    '/eventhursday': 'PE, LA, Bio\nIM, Assembly',
+    '/evenfriday': 'IH, LA, Bio\nChem, IM, HCL'
+}
 
 timetable = copy.deepcopy(timetable_original)
 
@@ -356,8 +355,8 @@ class WebhookHandler(webapp2.RequestHandler):
         calculateTimetable()
         
         humans = getHumans(sender)
-        for i in range(0, len(timetable)-1):
-            timetable[i][1] = timetable_original[i][1].replace("Humans", humans)
+        for day in timetable:
+            timetable[day] = timetable[day].replace("Humans", humans)
         
         allhw = []
         query = Things.query(Things.duedate > now).order(Things.duedate)
@@ -378,273 +377,270 @@ class WebhookHandler(webapp2.RequestHandler):
                 command, date, arg, arg2, arg3, state = getCommand(sender)
             except:
                 logging.info("no user found")
-            
-            # INCOMPLETE COMMANDS
-            if command == '/addhomework':
-                if date < datetime.date(1991, 1, 1):
-                    reply("When is this homework due?", keyboard=forcereply)
-                    complete = False
-                elif arg == '':
-                    reply("What is the homework called?", keyboard=forcereply)
-                    complete = False
-            elif command == '/delhomework':
-                if arg == '':
-                    for q in query:
-                        allhw.append(["%s %s" % (q.duedate.strftime("%d/%m"), q.thing)])
-                    hwkeyboard = json.dumps({'keyboard': allhw, 
-                                                'one_time_keyboard': True, 
-                                                'resize_keyboard': True,
-                                                'selective': True})
-                    reply("Which homework would you like to delete?", keyboard=hwkeyboard)
-                    complete = False
-            elif command == '/sethumans':
-                if arg == '':
-                    reply("What would you like your humanities subject to show as?", keyboard=forcereply)
-                    complete = False
-            elif command == '/next':
-                if arg == '':
-                    reply("What subject do you want to search for?", keyboard=forcereply)
-                    complete = False
-            elif command == '/test':
-                if arg == '':
-                    reply("What subject would you like to be tested on?", keyboard=forcereply)
-                    complete = False
-                if arg not in quiz.contents:
-                    reply("Subject not found.")
-                else:
-                    subject = quiz.contents[arg]
-                    if arg2 == 'topics':
-                        reply(', '.join(list(subject.keys())))
-                        return
-                    elif arg2 in subject:
-                        topic = arg2
+            else:
+                # INCOMPLETE COMMANDS
+                if command == '/addhomework':
+                    if date < datetime.date(1991, 1, 1):
+                        reply("When is this homework due?", keyboard=forcereply)
+                        complete = False
+                    elif arg == '':
+                        reply("What is the homework called?", keyboard=forcereply)
+                        complete = False
+                elif command == '/delhomework':
+                    if arg == '':
+                        for q in query:
+                            allhw.append(["%s %s" % (q.duedate.strftime("%d/%m"), q.thing)])
+                        hwkeyboard = json.dumps({'keyboard': allhw, 
+                                                    'one_time_keyboard': True, 
+                                                    'resize_keyboard': True,
+                                                    'selective': True})
+                        reply("Which homework would you like to delete?", keyboard=hwkeyboard)
+                        complete = False
+                elif command == '/sethumans':
+                    if arg == '':
+                        reply("What would you like your humanities subject to show as?", keyboard=forcereply)
+                        complete = False
+                elif command == '/next':
+                    if arg == '':
+                        reply("What subject do you want to search for?", keyboard=forcereply)
+                        complete = False
+                elif command == '/test':
+                    if arg == '':
+                        reply("What subject would you like to be tested on?", keyboard=forcereply)
+                        complete = False
+                    if arg not in quiz.contents:
+                        reply("Subject not found.")
                     else:
-                        topic = random.choice(list(subject.keys()))
-                    
-                    qn = random.randint(0, len(subject[topic])-1)
-                    reply(subject[topic][qn][0], keyboard=forcereply)
-                    state = subject[topic][qn][1]
-                    updateCommand(sender, state=state)
-                    complete = False
-            
-            if complete == False:
-                updateCommand(sender, command, date, arg, arg2, arg3, state)
-            
-            return complete
+                        subject = quiz.contents[arg]
+                        if arg2 == 'topics':
+                            reply(', '.join(list(subject.keys())))
+                            return
+                        elif arg2 in subject:
+                            topic = arg2
+                        else:
+                            topic = random.choice(list(subject.keys()))
+
+                        qn = random.randint(0, len(subject[topic])-1)
+                        reply(subject[topic][qn][0], keyboard=forcereply)
+                        state = subject[topic][qn][1]
+                        updateCommand(sender, state=state)
+                        complete = False
+
+                if complete == False:
+                    updateCommand(sender, command, date, arg, arg2, arg3, state)
+
+                return complete
             
         if getEnabled(chat_id):
-            
             try:
                 command, date, arg, arg2, arg3, state = getCommand(sender)
             except:
                 logging.info("no user found")
-            
-            # CONTINUATION OF INCOMPLETE COMMANDS
-            if 'reply_to_message' in message and 'username' in message['reply_to_message']['from']:
-                if message['reply_to_message']['from']['username'] == 'threeoheight_bot':
-                    # check the context of the incomplete command
-                    if command == '/sethumans' or command == '/next':
-                        if arg == '':
-                            arg = text
-                    elif command == '/addhomework':
-                        if date < datetime.date(1991, 1, 1):
-                            date = datetime.datetime.strptime(text+'/2017', "%d/%m/%Y")
-                        elif arg == '':
-                            arg = text
-                    elif command == '/delhomework':
-                        query = Things.query(Things.thing == text[6:])
-                        for q in query:
-                            target = q.key
-                            target.delete()
-                            reply("Ok, %s has been deleted." % text)
-                        clearCommand(sender)
-                        return
-                    elif command == '/test':
-                        if arg == '':
-                            arg = text
-                        else:
-                            percentage = difflib.SequenceMatcher(None, text, state).ratio()*100
-                            response = "Your answer is %0.f%% correct!" % percentage
-                            if percentage < 100:
-                                response = "%s The correct answer is:\n%s" % (response, state)
-                            reply(response)
-                            
-                            subject = quiz.contents[arg]
-                            if arg2 in subject:
-                                topic = arg2
-                            else:
-                                topic = random.choice(list(subject.keys()))
-
-                            qn = random.randint(0, len(subject[topic])-1)
-                            reply(subject[topic][qn][0], keyboard=forcereply)
-                            state = subject[topic][qn][1]
-                            updateCommand(sender, state=state)
-                            complete = False
-                            # clearCommand(sender)
+            else:
+                # CONTINUATION OF INCOMPLETE COMMANDS
+                if 'reply_to_message' in message and 'username' in message['reply_to_message']['from']:
+                    if message['reply_to_message']['from']['username'] == 'threeoheight_bot':
+                        # check the context of the incomplete command
+                        if command == '/sethumans' or command == '/next':
+                            if arg == '':
+                                arg = text
+                        elif command == '/addhomework':
+                            if date < datetime.date(1991, 1, 1):
+                                date = datetime.datetime.strptime(text+'/2017', "%d/%m/%Y")
+                            elif arg == '':
+                                arg = text
+                        elif command == '/delhomework':
+                            query = Things.query(Things.thing == text[6:])
+                            for q in query:
+                                target = q.key
+                                target.delete()
+                                reply("Ok, %s has been deleted." % text)
+                            clearCommand(sender)
                             return
-                    
-                    updateCommand(sender, command, date, arg, arg2, arg3, state)
-            
-            # NEW COMMANDS
-            if text.startswith('/'):
-                text = str(text).replace('@threeoheight_bot', '')
-                splitCommand = str.split(text)
-
-                command = splitCommand[0]
-                date = datetime.datetime.min
-                arg = ''
-                arg2 = ''
-                arg3 = ''
-                
-                if command == '/test':
-                    if len(splitCommand) > 1:
-                        arg = splitCommand[1]
-                        if len(splitCommand) > 2:
-                            arg2 = ' '.join(splitCommand[2:])
-                else:
-                    try:
-                        date = datetime.datetime.strptime(splitCommand[1]+'/2017', "%d/%m/%Y")
-                    except:
-                        arg = ' '.join(splitCommand[1:])
-                    else:
-                        arg = ' '.join(splitCommand[2:])
-                
-                updateCommand(sender, command, date, arg, arg2, arg3, '')
-                
-            complete = checkCommand()
-            try:
-                command, date, arg, arg2, arg3, state = getCommand(sender)
-            except:
-                logging.info("no user found")
-
-            # COMPLETE COMMANDS
-            if complete:
-                if arg == '/cancel' or command == '/cancel':
-                    clearCommand(sender)
-                    reply("Command cancelled")
-
-                # TIMETABLE
-                elif command == '/today':
-                    index = dayofweek
-                    if index == 5 or index == 6:
-                        reply("There's no school today!")
-                    else:
-                        if week % 2 == 0: #even week
-                            index += 5
-                        reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
-                elif command == '/tomorrow':
-                    index = dayofweek
-                    if week % 2 == 0: #even week
-                        index += 7
-                    index = nextschday[index]
-                    reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
-
-                elif command == '/weekno':
-                    if dayofweek <= 4:
-                        reply("This week is week %d" % week)
-                    else:
-                        reply("Next week is week %d" % week)
-
-                elif command == '/next':
-                    subj = arg
-                    index = dayofweek
-                    if week % 2 == 0: #even week
-                        index += 7
-                    index = nextschday[index]
-                    start = index
-
-                    while True:
-                        if subj in timetable[index][1]:
-                            oddity = week % 2
-                            if 'odd' in timetable[index][0]:
-                                oddity2 = 1
+                        elif command == '/test':
+                            if arg == '':
+                                arg = text
                             else:
-                                oddity2 = 0
+                                percentage = difflib.SequenceMatcher(None, text, state).ratio()*100
+                                response = "Your answer is %0.f%% correct!" % percentage
+                                if percentage < 100:
+                                    response = "%s The correct answer is:\n%s" % (response, state)
+                                reply(response)
 
-                            weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-                            day = weekdays[index%5]
-                            diff = index%5 - dayofweek
+                                subject = quiz.contents[arg]
+                                if arg2 in subject:
+                                    topic = arg2
+                                else:
+                                    topic = random.choice(list(subject.keys()))
 
-                            if oddity == oddity2:
-                                thisnext = 'this'
-                                if diff < 0 and dayofweek <= 4:
-                                    thisnext = 'next next'
-                                    diff += 14
-                            else:
-                                thisnext = 'next'
-                                diff += 7
-                            d = now + datetime.timedelta(diff)
+                                qn = random.randint(0, len(subject[topic])-1)
+                                reply(subject[topic][qn][0], keyboard=forcereply)
+                                state = subject[topic][qn][1]
+                                updateCommand(sender, state=state)
+                                complete = False
+                                # clearCommand(sender)
+                                return
 
-                            reply("The next %s lesson is %s %s, %d/%d (%s)" % (subj, thisnext, day, d.day, d.month, timetable[index][0]))
-                            break
+                        updateCommand(sender, command, date, arg, arg2, arg3, state)
+
+                # NEW COMMANDS
+                if text.startswith('/'):
+                    text = str(text).replace('@threeoheight_bot', '')
+                    splitCommand = str.split(text)
+
+                    command = splitCommand[0]
+                    date = datetime.datetime.min
+                    arg = ''
+                    arg2 = ''
+                    arg3 = ''
+
+                    if command == '/test':
+                        if len(splitCommand) > 1:
+                            arg = splitCommand[1]
+                            if len(splitCommand) > 2:
+                                arg2 = ' '.join(splitCommand[2:])
+                    else:
+                        try:
+                            date = datetime.datetime.strptime(splitCommand[1]+'/2017', "%d/%m/%Y")
+                        except:
+                            arg = ' '.join(splitCommand[1:])
                         else:
-                            index = (index + 1) % 10
+                            arg = ' '.join(splitCommand[2:])
 
-                        if index == start:
-                            reply("Subject not found.")
-                            break
-                elif command == '/sethumans':
-                    setHumans(sender, arg)
-                    reply("Humanities subject for %s has been set to %s" % (fr['first_name'], getHumans(sender)))
+                    updateCommand(sender, command, date, arg, arg2, arg3, '')
 
-                # HOMEWORK
-                elif command == '/addhomework':
-                    addThing(time.strftime("%d%m%Y%I%M%S"), date, arg)
-                    reply("Ok, %s has been set." % arg)
-                elif command == '/gethomework' or command == '/thisweek':
-                    if command == '/thisweek':
-                        query = query.filter(Things.duedate < now + datetime.timedelta(days=7))
+                complete = checkCommand()
+                try:
+                    command, date, arg, arg2, arg3, state = getCommand(sender)
+                except:
+                    logging.info("no user found")
 
-                    response = ""
-                    for q in query:
-                        response = response + q.duedate.strftime("%d/%m")+' '+q.thing + '\n'
+                # COMPLETE COMMANDS
+                if complete:
+                    if arg == '/cancel' or command == '/cancel':
+                        clearCommand(sender)
+                        reply("Command cancelled")
 
-                    if response == "":
-                        reply("There's no homework! Rejoice!")
-                    else:
+                    # TIMETABLE
+                    elif command == '/today':
+                        index = dayofweek
+                        if index == 5 or index == 6:
+                            reply("There's no school today!")
+                        else:
+                            if week % 2 == 0: #even week
+                                index += 5
+                            reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+                    elif command == '/tomorrow':
+                        index = dayofweek
+                        if week % 2 == 0: #even week
+                            index += 7
+                        index = nextschday[index]
+                        reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+
+                    elif command == '/weekno':
+                        if dayofweek <= 4:
+                            reply("This week is week %d" % week)
+                        else:
+                            reply("Next week is week %d" % week)
+
+                    elif command == '/next':
+                        subj = arg
+                        index = dayofweek
+                        if week % 2 == 0: #even week
+                            index += 7
+                        index = nextschday[index]
+                        start = index
+
+                        while True:
+                            if subj in timetable[index][1]:
+                                oddity = week % 2
+                                if 'odd' in timetable[index][0]:
+                                    oddity2 = 1
+                                else:
+                                    oddity2 = 0
+
+                                weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                                day = weekdays[index%5]
+                                diff = index%5 - dayofweek
+
+                                if oddity == oddity2:
+                                    thisnext = 'this'
+                                    if diff < 0 and dayofweek <= 4:
+                                        thisnext = 'next next'
+                                        diff += 14
+                                else:
+                                    thisnext = 'next'
+                                    diff += 7
+                                d = now + datetime.timedelta(diff)
+
+                                reply("The next %s lesson is %s %s, %d/%d (%s)" % (subj, thisnext, day, d.day, d.month, timetable[index][0]))
+                                break
+                            else:
+                                index = (index + 1) % 10
+
+                            if index == start:
+                                reply("Subject not found.")
+                                break
+                    elif command == '/sethumans':
+                        setHumans(sender, arg)
+                        reply("Humanities subject for %s has been set to %s" % (fr['first_name'], getHumans(sender)))
+
+                    # HOMEWORK
+                    elif command == '/addhomework':
+                        addThing(time.strftime("%d%m%Y%I%M%S"), date, arg)
+                        reply("Ok, %s has been set." % arg)
+                    elif command == '/gethomework' or command == '/thisweek':
+                        if command == '/thisweek':
+                            query = query.filter(Things.duedate < now + datetime.timedelta(days=7))
+
+                        response = ""
+                        for q in query:
+                            response = response + q.duedate.strftime("%d/%m")+' '+q.thing + '\n'
+
+                        if response == "":
+                            reply("There's no homework! Rejoice!")
+                        else:
+                            reply(response)
+
+                    # MESSAGES
+                    elif command == '/save':
+                        tags = str.split(arg)
+                        if 'reply_to_message' in message:
+                            from_chat_id = str(message['reply_to_message']['chat']['id'])
+                            message_id = str(message['reply_to_message']['message_id'])
+                        else:
+                            from_chat_id = str(chat_id)
+                            message_id = str(message_id)
+                        saveMessage(time.strftime("%d%m%Y%I%M%S"), from_chat_id, message_id, tags)
+                        reply("Message saved.")
+                    elif command == '/find':
+                        query = Messages.query(Messages.tags == arg)
+                        for q in query:
+                            forward(q.from_chat_id, q.message_id)
+
+                    # BIRTHDAYS
+                    elif command == '/nextbirthday':
+                        # really roundabout way of doing this but i don't know how else to do this
+                        query = Birthdays.query(Birthdays.birthday > now).order(-Birthdays.birthday)
+                        for q in query:
+                            response = "%s %s" % (q.birthday.strftime('%d/%m'), q.name)
                         reply(response)
 
-                # MESSAGES
-                elif command == '/save':
-                    tags = str.split(arg)
-                    if 'reply_to_message' in message:
-                        from_chat_id = str(message['reply_to_message']['chat']['id'])
-                        message_id = str(message['reply_to_message']['message_id'])
-                    else:
-                        from_chat_id = str(chat_id)
-                        message_id = str(message_id)
-                    saveMessage(time.strftime("%d%m%Y%I%M%S"), from_chat_id, message_id, tags)
-                    reply("Message saved.")
-                elif command == '/find':
-                    query = Messages.query(Messages.tags == arg)
-                    for q in query:
-                        forward(q.from_chat_id, q.message_id)
+                    # MISCELLANEOUS
+                    elif command == '/cute':
+                        imgvsgif = random.randint(0,1)
+                        if imgvsgif == 0:
+                            url = imgs[random.randint(0, len(imgs)-1)]
+                            reply(img=urllib2.urlopen(url).read())
+                        else:
+                            url = gifs[random.randint(0, len(gifs)-1)]
+                            reply(gif=urllib2.urlopen(url).read())
+                    elif command in timetable:
+                        reply(timetable[command])
 
-                # BIRTHDAYS
-                elif command == '/nextbirthday':
-                    # really roundabout way of doing this but i don't know how else to do this
-                    query = Birthdays.query(Birthdays.birthday > now).order(-Birthdays.birthday)
-                    for q in query:
-                        response = "%s %s" % (q.birthday.strftime('%d/%m'), q.name)
-                    reply(response)
-
-                # MISCELLANEOUS
-                elif command == '/cute':
-                    imgvsgif = random.randint(0,1)
-                    if imgvsgif == 0:
-                        url = imgs[random.randint(0, len(imgs)-1)]
-                        reply(img=urllib2.urlopen(url).read())
-                    else:
-                        url = gifs[random.randint(0, len(gifs)-1)]
-                        reply(gif=urllib2.urlopen(url).read())
-                else:
-                    for day in timetable:
-                        if day[0] in text:
-                            reply(day[1])
-
-                clearCommand(sender)
-                counter = int(getHumans(1))
-                setHumans(1, str(counter+1))
+                    clearCommand(sender)
+                    counter = int(getHumans(1))
+                    setHumans(1, str(counter+1))
 
 class CustomMessage(webapp2.RequestHandler):
     def get(self):
@@ -669,7 +665,7 @@ class CheckBday(webapp2.RequestHandler):
                 'chat_id': classID,
                 'text': "Happy birthday %s!" % q.name
             })).read()
-            
+
 class CheckTimetable(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
