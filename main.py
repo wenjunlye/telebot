@@ -524,18 +524,20 @@ class WebhookHandler(webapp2.RequestHandler):
                     # TIMETABLE
                     elif command == '/today':
                         index = dayofweek
-                        if index == 5 or index == 6:
+                        if dayofweek == 5 or dayofweek == 6:
                             reply("There's no school today!")
                         else:
                             if week % 2 == 0: #even week
                                 index += 5
-                            reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+                        key = list(timetable.keys())[index]
+                        reply("%s:\n%s" % (key, timetable[key]))
                     elif command == '/tomorrow':
                         index = dayofweek
                         if week % 2 == 0: #even week
                             index += 7
                         index = nextschday[index]
-                        reply("%s:\n%s" % (timetable[index][0], timetable[index][1]))
+                        key = list(timetable.keys())[index]
+                        reply("%s:\n%s" % (key, timetable[key]))
 
                     elif command == '/weekno':
                         if dayofweek <= 4:
@@ -552,9 +554,10 @@ class WebhookHandler(webapp2.RequestHandler):
                         start = index
 
                         while True:
-                            if subj in timetable[index][1]:
+                            key = list(timetable.keys())[index]
+                            if subj in timetable[key]:
                                 oddity = week % 2
-                                if 'odd' in timetable[index][0]:
+                                if 'odd' in timetable[key]:
                                     oddity2 = 1
                                 else:
                                     oddity2 = 0
@@ -573,7 +576,7 @@ class WebhookHandler(webapp2.RequestHandler):
                                     diff += 7
                                 d = now + datetime.timedelta(diff)
 
-                                reply("The next %s lesson is %s %s, %d/%d (%s)" % (subj, thisnext, day, d.day, d.month, timetable[index][0]))
+                                reply("The next %s lesson is %s %s, %d/%d (%s)" % (subj, thisnext, day, d.day, d.month, timetable[key]))
                                 break
                             else:
                                 index = (index + 1) % 10
@@ -677,7 +680,8 @@ class CheckTimetable(webapp2.RequestHandler):
             index = tmr
             if week % 2 == 0: # even week
                 index += 5
-            ttb = timetable[index]
+            key = list(timetable.keys())[index]
+            ttb = timetable[key]
             triggers = ['PE']
             
             for trigger in triggers:
