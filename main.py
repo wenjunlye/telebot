@@ -1,4 +1,4 @@
-import StringIO, json, logging, random, urllib, urllib2, time, datetime, math, copy, difflib
+import StringIO, json, logging, random, urllib, urllib2, time, datetime, math, copy, difflib, collections
 
 import quiz
 import secrets
@@ -28,18 +28,18 @@ class SG(datetime.tzinfo):
 
 sg = SG()
 
-timetable_original = {
-    '/oddmonday': 'CLC, Humans, LA\nIM, Chem',
-    '/oddtuesday': 'Bio, HCL, PE\nLA, Chem(lab)',
-    '/oddwednesday': 'IM, LA, Humans\nIH, CCE',
-    '/oddthursday': 'IM, PE, HCL\nHumans, LA',
-    '/oddfriday': 'IH, Bio(lab), IM\nHCL, Chem, LA',
-    '/evenmonday': 'HCL, PE\nIM',
-    '/eventuesday': 'HCL, LA, Bio(lab)\nHumans, Chem(lab)',
-    '/evenwednesday': 'Humans, IH, IM\nLA, CCE',
-    '/eventhursday': 'PE, LA, Bio\nIM, Assembly',
-    '/evenfriday': 'IH, LA, Bio\nChem, IM, HCL'
-}
+timetable_original = collections.OrderedDict([
+    ('/oddmonday', 'CLC, Humans, LA\nIM, Chem'),
+    ('/oddtuesday', 'Bio, HCL, PE\nLA, Chem(lab)'),
+    ('/oddwednesday', 'IM, LA, Humans\nIH, CCE'),
+    ('/oddthursday', 'IM, PE, HCL\nHumans, LA'),
+    ('/oddfriday', 'IH, Bio(lab), IM\nHCL, Chem, LA'),
+    ('/evenmonday', 'HCL, PE\nIM'),
+    ('/eventuesday', 'HCL, LA, Bio(lab)\nHumans, Chem(lab)'),
+    ('/evenwednesday', 'Humans, IH, IM\nLA, CCE'),
+    ('/eventhursday', 'PE, LA, Bio\nIM, Assembly'),
+    ('/evenfriday', 'IH, LA, Bio\nChem, IM, HCL')
+])
 
 timetable = copy.deepcopy(timetable_original)
 
