@@ -2,6 +2,7 @@ import StringIO, json, logging, random, urllib, urllib2, time, datetime, math, c
 
 import quiz
 import secrets
+import media
 
 # for sending images
 from PIL import Image
@@ -55,87 +56,6 @@ def calculateTimetable():
     if week > 10 or week < 1:
         week = 0
     dayofweek = now.weekday()
-
-imgs = [
-    'http://bi.gazeta.pl/im/36/19/14/z21076790IER,23-mlode-pandy-urodzone-w-tym-roku-w-centrum-badaw.jpg',
-    'https://i2.wp.com/travelwirenews.com/wp-content/uploads/2017/04/217.218.67.2336f0c9d77-1c7e-4a96-b532-d-9d343bc91aadb5dd309a79d9165c4009980bc5fb.jpg?fit=650%2C366',
-    'http://abcnews.go.com/images/Lifestyle/rtr_baby_pandas_07_jc_160930.jpg',
-    'https://www.icetrend.com/wp-content/uploads/2016/10/gty_baby_pandas_01_jc_160930_4x3_992.jpg',
-    'https://lh3.googleusercontent.com/-CG5d421qQFg/Vmql2Ygit9I/AAAAAAAAAiY/Drr0kh7BeWM/w1100-h734/2.jpg',
-    'https://pbs.twimg.com/profile_images/494064548035719168/U8cDoHB-.jpeg',
-    'http://www.watson.ch/imgdb/57ab/Qtablet_hq,E,0,0,700,700,291,291,116,116/5221191888988022',
-    'https://media1.popsugar-assets.com/files/thumbor/rTkEeGRG84fNJLov7m_xMHy6tBs/fit-in/2048xorig/filters:format_auto-!!-:strip_icc-!!-/2012/09/39/4/192/1922243/cf3f7dcec6701811_cute_pomeranians_main/i/Cute-Pomeranian-Pictures.jpg',
-    'http://www.accessonslow.com/images/animed%20kitten%20001.jpg',
-    'http://www.ordissinaute.fr/sites/default/files/styles/diaporama_slide/public/diaporama_images/chaton-endormi-dans-tasse-rayures-bleues-blanches-r-default.jpg?itok=P7htWAdy',
-    'https://cdn.quizme.se/quiz/f709bd27-a278-4591-b9bf-d6e43bec873a.PNG',
-    'http://www.mrwallpaper.com/wallpapers/Cute-Puppy-Kitten.jpg',
-    'https://static.curazy.com/wp-content/uploads/2015/02/1452522_6.jpg',
-    'http://data.whicdn.com/images/233453379/original.jpg',
-    'http://www.minimaltese.com.au/images/image003%20(1).jpg',
-    'http://hyperanzeigen.at/x-at/inz/340/340931-zwei-sch-F6ne-m-E4nnliche-und-weibliche-malteser-welpen-1.jpg',
-    'https://effe7b274fb7be1907a5-260e1b894ca23dd8bee041f5045ecd74.ssl.cf1.rackcdn.com/img-45-591965-original-59088daea8b08.jpg',
-    'http://images.locanto.sg/1974694362/Mini-maltese-puppy-for-sale-sold_3.jpg',
-    'http://pm1.narvii.com/6125/610e60d75ed8df775754e285948649245c5381b9_hq.jpg',
-    'https://i0.wp.com/doglers.com/wp-content/uploads/2016/02/Alaskan-Malamute-Puppy-Photo.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/273-lonely-soda_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/published/271a-babynoteeth.jpg?1495692681',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/270-zaihuni_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/265-bee-and-calendar1_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/265-bee-and-calendar2_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/expressway_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/260_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/241-strawberry-cake_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/chocolate-cake_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/230-da-bao_1_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/233-chashaobao_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/234-dou-sha-bao_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/xiao-long-bao_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/han-bao-bao_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/totogod_orig.jpg',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/published/2tyred.jpg?1500999622',
-    'http://www.bitterstickgirl.sg/uploads/2/4/9/0/24906893/published/275-dmj.jpg?1498403610',
-    'https://i.redd.it/cmnv6e1po4kz.jpg',
-    'https://i.imgur.com/jYzIzGK.jpg',
-    'https://i.redd.it/1t3g97rs74kz.jpg',
-    'https://i.redd.it/zni2q0pu23kz.jpg',
-    'https://i.redd.it/vev7crii03kz.png',
-    'https://i.redd.it/xwz1k39wv4kz.jpg',
-    'https://i.redd.it/l213ahgos2kz.jpg',
-    'https://i.redd.it/hlmd9uuco3kz.jpg',
-    'https://i.imgur.com/0Yo1Fr4.jpg',
-    'https://i.redd.it/e7qut9ezf2kz.jpg',
-    'https://i.redd.it/4nj3h6wn45kz.jpg',
-    'https://i.redd.it/e4ut3f5rd2kz.jpg',
-    'https://i.pinimg.com/originals/16/19/4a/16194a0fc903c385db95ba8ab8b4c38c.jpg',
-    'https://i.redd.it/hg4hxu8332kz.jpg',
-    'https://i.redd.it/wi4bkjkto4kz.jpg',
-    'https://i.redd.it/96jmckcp76kz.jpg',
-    'https://i.redd.it/fkqxtw3zu2kz.jpg',
-    'https://i.redd.it/m6hm91geo6kz.jpg'
-]
-
-gifs = [
-    'http://31.media.tumblr.com/tumblr_m80f4bhmeY1rq5rj4o1_500.gif',
-    'https://omfgdogs.com/omfgdogs@2X.gif',
-    'http://bestanimations.com/Animals/Mammals/Cats/cats/cute-kitty-animated-gif-25.gif',
-    'https://media.giphy.com/media/100QWMdxQJzQC4/giphy.gif',
-    'https://s-media-cache-ak0.pinimg.com/originals/cd/22/85/cd228571a7ec2d8d542eb89b626709e2.gif'
-    'https://media.giphy.com/media/SF8qWBUl4sV7G/giphy.gif',
-    'http://thefw.com/files/2013/03/Cute-Cat.gif',
-    'http://www.pbh2.com/wordpress/wp-content/uploads/2014/08/floppy-kitten.gif',
-    'https://media.tenor.com/images/829f6074248e6c6437ef9986bce57575/tenor.gif',
-    'https://media.tenor.com/images/2d512f1f6ef6b260d94acb429d3e794c/tenor.gif',
-    'https://media.tenor.com/images/a7bd6b94430c1e66148d580209e377c5/tenor.gif',
-    'https://media.giphy.com/media/3oEdv4hwWTzBhWvaU0/giphy.gif',
-    'http://data.whicdn.com/images/201782005/original.gif',
-    'https://media.tenor.com/images/035f033ebba7fae7019e543a81a81233/tenor.gif',
-    'https://i.imgur.com/uPtZeml.gif',
-    'https://i.imgur.com/dmLsSkT.gif',
-    'http://i.imgur.com/u252HlS.gif',
-    'http://i.imgur.com/uGSmw5w.gif',
-    'http://i.imgur.com/ZqoB7Cd.gif',
-    'https://i.imgur.com/uYw2tQo.gif'
-]
 
 # ================================
 
@@ -633,10 +553,10 @@ class WebhookHandler(webapp2.RequestHandler):
                     elif command == '/cute':
                         imgvsgif = random.randint(0,1)
                         if imgvsgif == 0:
-                            url = imgs[random.randint(0, len(imgs)-1)]
+                            url = media.imgs[random.randint(0, len(media.imgs)-1)]
                             reply(img=urllib2.urlopen(url).read())
                         else:
-                            url = gifs[random.randint(0, len(gifs)-1)]
+                            url = media.gifs[random.randint(0, len(media.gifs)-1)]
                             reply(gif=urllib2.urlopen(url).read())
                     elif command in timetable:
                         reply(timetable[command])
@@ -682,7 +602,7 @@ class CheckTimetable(webapp2.RequestHandler):
                 index += 5
             key = list(timetable.keys())[index]
             ttb = timetable[key]
-            triggers = ['PE']
+            triggers = []
             
             for trigger in triggers:
                 if trigger in ttb[1]:
