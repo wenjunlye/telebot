@@ -299,7 +299,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 logging.info("no user found")
             else:
                 # INCOMPLETE COMMANDS
-                if command == '/addhomework':
+                if command == '/addhomework' or command == '/newhomework':
                     if date < datetime.date(1991, 1, 1):
                         reply("When is this homework due?", keyboard=forcereply)
                         complete = False
@@ -334,6 +334,7 @@ class WebhookHandler(webapp2.RequestHandler):
                         subject = quiz.contents[arg]
                         if arg2 == 'topics':
                             reply(', '.join(list(subject.keys())))
+                            clearCommand(sender)
                             return
                         elif arg2 in subject:
                             topic = arg2
@@ -364,7 +365,7 @@ class WebhookHandler(webapp2.RequestHandler):
                         if command == '/sethumans' or command == '/next':
                             if arg == '':
                                 arg = text
-                        elif command == '/addhomework':
+                        elif command == '/addhomework' or command == '/newhomework':
                             if date < datetime.date(1991, 1, 1):
                                 date = datetime.datetime.strptime(text+'/2017', "%d/%m/%Y")
                             elif arg == '':
@@ -509,12 +510,12 @@ class WebhookHandler(webapp2.RequestHandler):
                         reply("Humanities subject for %s has been set to %s" % (fr['first_name'], getHumans(sender)))
 
                     # HOMEWORK
-                    elif command == '/addhomework':
+                    elif command == '/addhomework' or command == '/newhomework':
                         addThing(time.strftime("%d%m%Y%I%M%S"), date, arg)
                         reply("Ok, %s has been set." % arg)
-                    elif command == '/gethomework' or command == '/thisweek':
+                    elif command == '/gethomework' or command == '/homeworklist' or command == '/thisweek':
                         if command == '/thisweek':
-                            query = query.filter(Things.duedate < now + datetime.timedelta(days=7))
+                            query = query.filter(Things.duedate < now + datetime.timedelta(days=(5-dayofweek)))
 
                         response = ""
                         for q in query:
