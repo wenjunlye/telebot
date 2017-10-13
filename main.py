@@ -88,8 +88,8 @@ class Birthdays(ndb.Model):
 
 class Messages(ndb.Model):
     # key name: doc_id
-    from_chat_id = ndb.StringProperty()
-    message_id = ndb.StringProperty()
+    from_chat_id = ndb.IntegerProperty()
+    message_id = ndb.IntegerProperty()
     tags = ndb.StringProperty(repeated=True)
 
 # ================================
@@ -226,8 +226,8 @@ class WebhookHandler(webapp2.RequestHandler):
                     recipient = meID
                     reply = ''
                 else:
-                    recipient = str(chat_id)
-                    reply = str(message_id)
+                    recipient = chat_id
+                    reply = message_id
                 resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
                     'chat_id': recipient,
                     'text': msg.encode('utf-8'),
@@ -267,7 +267,7 @@ class WebhookHandler(webapp2.RequestHandler):
         
         def forward(from_chat_id, message_id):
             resp = urllib2.urlopen(BASE_URL + 'forwardMessage', urllib.urlencode({
-                'chat_id': str(chat_id),
+                'chat_id': chat_id,
                 'from_chat_id': from_chat_id,
                 'message_id': message_id
             })).read()
@@ -289,7 +289,7 @@ class WebhookHandler(webapp2.RequestHandler):
             elif text == '/stop':
                 reply('Bot disabled')
                 setEnabled(chat_id, False)
-                
+        
         def checkCommand():
             complete = True
             
@@ -528,26 +528,41 @@ class WebhookHandler(webapp2.RequestHandler):
 
                     # MESSAGES
                     elif command == '/save':
-                        tags = str.split(arg)
+                        tags = str.split(str(arg))
                         if 'reply_to_message' in message:
-                            from_chat_id = str(message['reply_to_message']['chat']['id'])
-                            message_id = str(message['reply_to_message']['message_id'])
+                            from_chat_id = message['reply_to_message']['chat']['id']
+                            message_id = message['reply_to_message']['message_id']
                         else:
-                            from_chat_id = str(chat_id)
-                            message_id = str(message_id)
+                            from_chat_id = chat_id
                         saveMessage(time.strftime("%d%m%Y%I%M%S"), from_chat_id, message_id, tags)
                         reply("Message saved.")
                     elif command == '/find':
-                        query = Messages.query(Messages.tags == arg)
-                        for q in query:
-                            forward(q.from_chat_id, q.message_id)
+                        if arg:
+                            query = Messages.query(Messages.tags == arg)
+                            for q in query:
+                                forward(q.from_chat_id, q.message_id)
+                        else:
+                            query = Messages.query()
+                            response = ""
+                            for q in query:
+                                response += ', '.join(list(q.tags))+"\n"
+                            reply(response)
 
                     # BIRTHDAYS
                     elif command == '/nextbirthday':
-                        # really roundabout way of doing this but i don't know how else to do this
-                        query = Birthdays.query(Birthdays.birthday > now).order(-Birthdays.birthday)
-                        for q in query:
-                            response = "%s %s" % (q.birthday.strftime('%d/%m'), q.name)
+                        # shift 'now' to the same date but in 2017
+                        
+                        if now.month == 2 and now.day == 29:
+                            shifted_now = datetime.date(2017, 3, 1)
+                        else:
+                            shifted_now = datetime.date(2017, now.month, now.day)
+                        
+                        query = Birthdays.query(Birthdays.birthday > shifted_now).order(Birthdays.birthday).fetch(1)
+                        nextbday = query[0].birthday
+                        query2 = Birthdays.query(Birthdays.birthday == nextbday)
+                        response = ""
+                        for q in query2:
+                            response += "%s %s\n" % (q.birthday.strftime('%d/%m'), q.name)
                         reply(response)
 
                     # MISCELLANEOUS
@@ -572,7 +587,7 @@ class CustomMessage(webapp2.RequestHandler):
         msg = self.request.get('msg')
         chat = self.request.get('chat')
         resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
-            'chat_id': str(chat) or meID,
+            'chat_id': chat or meID,
             'text': msg,
             'parse_mode': 'Markdown'
         })).read()
