@@ -16,8 +16,8 @@ import webapp2
 TOKEN = secrets.token
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
-classID = secrets.class_id
-meID = secrets.me_id
+class_id = secrets.class_id
+me_id = secrets.me_id
 
 class SG(datetime.tzinfo):
     def utcoffset(self, dt):
@@ -44,18 +44,18 @@ timetable_original = collections.OrderedDict([
 
 timetable = copy.deepcopy(timetable_original)
 
-nextschday = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
-startterm = datetime.datetime(2017, 9, 9, 0, 0, 0, tzinfo=sg)
+next_sch_day = [1, 2, 3, 4, 5, 0, 0, 6, 7, 8, 9, 0, 5, 5]
+start_of_term = datetime.datetime(2017, 9, 9, 0, 0, 0, tzinfo=sg)
 
 def calculateTimetable():
-    global now, week, dayofweek
+    global now, week, day_of_week
     now = datetime.datetime.now(sg)
-    delta = now - startterm
+    delta = now - start_of_term
     split = str.split(str(delta))
     week = math.floor(int(split[0])/7 + 1)
     if week > 10 or week < 1:
         week = 0
-    dayofweek = now.weekday()
+    day_of_week = now.weekday()
 
 # ================================
 
@@ -223,7 +223,7 @@ class WebhookHandler(webapp2.RequestHandler):
         def reply(msg=None, img=None, gif=None, keyboard=removekb, debug=False):
             if msg:
                 if debug:
-                    recipient = meID
+                    recipient = me_id
                     reply = ''
                 else:
                     recipient = chat_id
@@ -444,8 +444,8 @@ class WebhookHandler(webapp2.RequestHandler):
 
                     # TIMETABLE
                     elif command == '/today':
-                        index = dayofweek
-                        if dayofweek == 5 or dayofweek == 6:
+                        index = day_of_week
+                        if day_of_week == 5 or day_of_week == 6:
                             reply("There's no school today!")
                         else:
                             if week % 2 == 0: #even week
@@ -453,25 +453,25 @@ class WebhookHandler(webapp2.RequestHandler):
                         key = list(timetable.keys())[index]
                         reply("%s:\n%s" % (key, timetable[key]))
                     elif command == '/tomorrow':
-                        index = dayofweek
+                        index = day_of_week
                         if week % 2 == 0: #even week
                             index += 7
-                        index = nextschday[index]
+                        index = next_sch_day[index]
                         key = list(timetable.keys())[index]
                         reply("%s:\n%s" % (key, timetable[key]))
 
                     elif command == '/weekno':
-                        if dayofweek <= 4:
+                        if day_of_week <= 4:
                             reply("This week is week %d" % week)
                         else:
                             reply("Next week is week %d" % week)
 
                     elif command == '/next':
                         subj = arg
-                        index = dayofweek
+                        index = day_of_week
                         if week % 2 == 0: #even week
                             index += 7
-                        index = nextschday[index]
+                        index = next_sch_day[index]
                         start = index
 
                         while True:
@@ -485,11 +485,11 @@ class WebhookHandler(webapp2.RequestHandler):
 
                                 weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
                                 day = weekdays[index%5]
-                                diff = index%5 - dayofweek
+                                diff = index%5 - day_of_week
 
                                 if oddity == oddity2:
                                     thisnext = 'this'
-                                    if diff < 0 and dayofweek <= 4:
+                                    if diff < 0 and day_of_week <= 4:
                                         thisnext = 'next next'
                                         diff += 14
                                 else:
@@ -515,7 +515,7 @@ class WebhookHandler(webapp2.RequestHandler):
                         reply("Ok, %s has been set." % arg)
                     elif command == '/gethomework' or command == '/homeworklist' or command == '/thisweek':
                         if command == '/thisweek':
-                            query = query.filter(Things.duedate < now + datetime.timedelta(days=(5-dayofweek)))
+                            query = query.filter(Things.duedate < now + datetime.timedelta(days=(5-day_of_week)))
 
                         response = ""
                         for q in query:
@@ -587,7 +587,7 @@ class CustomMessage(webapp2.RequestHandler):
         msg = self.request.get('msg')
         chat = self.request.get('chat')
         resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
-            'chat_id': chat or meID,
+            'chat_id': chat or me_id,
             'text': msg,
             'parse_mode': 'Markdown'
         })).read()
@@ -601,7 +601,7 @@ class CheckBday(webapp2.RequestHandler):
         query = Birthdays.query(Birthdays.birthday == datetime.date(2017, thism, thisd))
         for q in query:
             resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
-                'chat_id': classID,
+                'chat_id': class_id,
                 'text': "Happy birthday %s!" % q.name
             })).read()
 
@@ -611,7 +611,7 @@ class CheckTimetable(webapp2.RequestHandler):
         
         calculateTimetable()
         
-        tmr = (dayofweek + 1)%7
+        tmr = (day_of_week + 1)%7
         if tmr <= 4: # if tomorrow is a weekday
             index = tmr
             if week % 2 == 0: # even week
@@ -623,7 +623,7 @@ class CheckTimetable(webapp2.RequestHandler):
             for trigger in triggers:
                 if trigger in ttb[1]:
                     resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
-                        'chat_id':  classID,
+                        'chat_id':  class_id,
                         'text': "There's %s tomorrow! (%s)" % (trigger, ttb[0]),
                         'parse_mode': 'Markdown'
                     })).read()
